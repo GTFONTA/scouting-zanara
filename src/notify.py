@@ -42,6 +42,11 @@ def _send(subject: str, body_html: str) -> None:
     print(f"Mail enviado a {', '.join(to)}: {subject}")
 
 
+def test_prefix(cfg: dict) -> str:
+    """A municipio in its trial weeks: the subject says so (the mail only goes to mail.para)."""
+    return "[EN PRUEBA] " if cfg.get("municipio", {}).get("en_prueba") else ""
+
+
 def _maps(r):
     return f"https://www.google.com/maps?q={r['lat_usada']:.6f},{r['lon_usada']:.6f}" if r.get("lat_usada") else ""
 
@@ -131,7 +136,7 @@ def render_report(rows, health, changes, n_raw, cfg) -> tuple[str, str]:
                  f"Descartes: {html.escape(', '.join(f'{k} {v}' for k, v in why.most_common(6)))}</p>")
     if changes and changes.get("sheet_url"):
         parts.append(f"<p><a href='{changes['sheet_url']}'>Abrir la Google Sheet</a></p>")
-    subject = cfg["mail"]["asunto"].format(n=n, fecha=today)
+    subject = test_prefix(cfg) + cfg["mail"]["asunto"].format(n=n, fecha=today)
     if failed:
         subject += " — ⚠ falla en " + ", ".join(h["portal"] for h in failed)
     return subject, "<div style='font:14px Arial'>" + "\n".join(parts) + "</div>"
@@ -308,7 +313,7 @@ def _render_products(rows, health, changes, n_raw, cfg) -> tuple[str, str]:
                  f"Descartes: {html.escape(', '.join(f'{k} {v}' for k, v in why.most_common(6)))}</p>")
     if changes and changes.get("sheet_url"):
         parts.append(f"<p><a href='{changes['sheet_url']}'>Abrir la Google Sheet</a></p>")
-    subject = cfg["mail"]["asunto"].format(n=n, fecha=today)
+    subject = test_prefix(cfg) + cfg["mail"]["asunto"].format(n=n, fecha=today)
     if failed:
         subject += " — ⚠ falla en " + ", ".join(h["portal"] for h in failed)
     return subject, "<div style='font:14px Arial'>" + "\n".join(parts) + "</div>"
@@ -317,7 +322,7 @@ def _render_products(rows, health, changes, n_raw, cfg) -> tuple[str, str]:
 def send_error(tb: str, cfg: dict) -> None:
     today = date.today().strftime("%d/%m/%Y")
     try:
-        _send(f"Scouting San Isidro — ERROR en la corrida ({today})",
+        _send(f"{test_prefix(cfg)}Scouting {cfg.get('municipio', {}).get('nombre', 'San Isidro')} — ERROR en la corrida ({today})",
               "<p style='color:#900;font-weight:bold'>La corrida semanal se cortó con un error. "
               "No hay resultados esta semana.</p><pre style='font-size:12px'>" + html.escape(tb[-4000:]) + "</pre>")
     except Exception as e:                                # noqa: BLE001 - nothing else to do

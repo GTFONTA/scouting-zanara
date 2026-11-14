@@ -1,0 +1,77 @@
+# Scouting Tigre — se superpone a config.yaml (ver src/config.py). Datos generados por tools/municipio_pba.py.
+# Normativa: UrbaSIG de la Provincia (Código de Zonificación Ord. 1894/96 y modif. hasta 3776/21; capa 09-2022).
+# Decisiones tomadas sin Gonzalo (13-14/11/2026), a validar: ver municipios/tigre/NORMATIVA.md.
+
+municipio:
+  nombre: Tigre
+  motor: zonas
+  en_prueba: true                  # mail marcado [EN PRUEBA], solo a mail.para (o la primera dirección de MAIL_TO)
+
+criterio:                          # mismos umbrales que San Isidro hasta que Gonzalo defina los de Tigre
+  m2_construibles_min: 1300
+  incidencia_max_usd: 400
+  incidencia_casi_max_usd: 500
+
+productos:
+  normativa_csv: municipios/tigre/normativa_zonas.csv
+  alias_zonas!: {}
+  comparables:
+    busquedas_mercadolibre:
+      - https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/tigre/_TOTAL*AREA_150-400
+    busquedas_zonaprop: []
+  flags:
+    calles_via_rapida: []          # el incentivo de vías rápidas es del C.O.U. de San Isidro
+    articulos!:                    # cada flag con la norma de Tigre (las de San Isidro no aplican)
+      galpon_no_conforme: "uso no conforme: verificar Código de Zonificación de Tigre"
+      pasivo_ambiental: "verificar antecedentes del predio"
+      gran_predio_3000: "predio grande: verificar cesiones Ley 8912"
+      manzana_7400: "posible manzana completa: verificar Ley 8912"
+      ue_10000: "más de 1 ha: verificar urbanización/club de campo Ley 8912"
+      frentista_via_rapida: ""
+      lindero_zona_c_o_i: "lindero a zona comercial o industrial"
+      borde_de_zona: "posible predio en dos zonas: verificar plano"
+      requiere_cloaca_para_max: "indicadores máximos con agua y cloaca"
+      premio_ley_8912: "FOT/densidad con premios del Art. 47 Ley 8912: ver notas de la zona"
+      ver_observacion_zona: "la zona tiene observaciones en UrbaSIG: ver normativa_zonas.csv"
+      dos_frentes: "esquina o doble frente: más frente a la calle que el informado"
+
+zonificacion:
+  zonas_geojson: municipios/tigre/zonas.geojson
+  barrios_geojson: municipios/tigre/localidades.geojson
+  calles_geojson: municipios/tigre/calles.geojson
+  fot_max: 3.0                     # C2a, C2b, TC, UR 1 C
+  superficie_min_prefiltro: 433.3  # = 1300 / 3.0
+
+portales:
+  zonaprop:
+    # Tigre tiene miles de lotes en barrios cerrados (sin producto): los terrenos arrancan en 600 m2 para no
+    # multiplicar páginas. Sin probar todavía: primera consulta después de la corrida de San Isidro del 16/11.
+    start_urls:
+      - https://www.zonaprop.com.ar/terrenos-venta-tigre-mas-600-m2.html
+      - https://www.zonaprop.com.ar/casas-venta-tigre-mas-600-m2.html
+      - https://www.zonaprop.com.ar/bodegas-galpones-venta-tigre-mas-400-m2.html
+      - https://www.zonaprop.com.ar/edificios-venta-tigre.html
+  mercadolibre:
+    busquedas:
+      - url: https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/tigre/_TOTAL*AREA_600-*
+        tipologia: terreno
+      - url: https://inmuebles.mercadolibre.com.ar/casas/venta/bsas-gba-norte/tigre/_TOTAL*AREA_600-*
+        tipologia: casa
+      - url: https://inmuebles.mercadolibre.com.ar/depositos-y-galpones/venta/bsas-gba-norte/tigre/_TOTAL*AREA_400-*
+        tipologia: galpon
+
+sheet:
+  id: ""                           # sin Sheet propia todavía: corre con --sin-sheet
+
+mail:
+  asunto: "Scouting Tigre — {n} oportunidades nuevas ({fecha})"
+
+geocodificacion:
+  sufijo_direccion: ", Tigre, Buenos Aires, Argentina"
+  alias_barrios!:
+    villa la nata: Benavídez
+    pacheco: General Pacheco
+    talar de pacheco: El Talar
+    santa maria de tigre: Tigre
+    tigre centro: Tigre
+    delta: Primera Sección

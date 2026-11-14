@@ -1,0 +1,49 @@
+zona,grupo,relevancia,fot,fot_max,fos,altura_max,multifamiliar,regla_unidades,m2_terreno_por_unidad,ancho_min_unidad,sup_propia_min_unidad,acceso_directo_requerido,subdiv_ancho_min,subdiv_sup_min,densidad_neta,densidad_neta_potencial,densidad_ue,flags,fuente,notas
+ACCESO NORTE,,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+AREA DE ISLAS,Area De Islas,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+BPN,Zona Barrio Parque Nautico,Media,0.7,,0.35,"9,5M",No,Unifamiliar por parcela,,,,no,17,600,160,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+C1,Zona Comercial (Centro Politico - Administrativo O Comercial),Alta,3,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,1400,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+C2,Zona Comercial Local,Alta,3,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,900,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+C2A,Zona Comercial Local,Alta,3,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,300,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+C2B,Zona Comercial Local,Alta,1.2,,0.6,"9,5 M",Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,500,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+C3,Zona Comercial Local,Media,1.2,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,200,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+C3A,Zona Comercial Mixta,Media,1.2,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,200,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,"FOT: 1,2 - (FRENTISTAS A AV. AVELLANEDA 1,8)"
+C4Ue,Zona Comercial Especial,Alta,2,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,,,500,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,"FOT: 1,2 (COMERCIO) - 2 (VIVENDA MULTIFAMILIAR) - 1 (VIVIENDA UNIFAMILIAR)"
+DDP,Distrito De Desarrollo Programado,Alta,1.5,,0.4,"11,20 M",Sí,Densidad neta de la zona (multifamiliar),,,,no,,,600,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+DI,Distrito Industrial,Media,1.2,,0.6,12 M,No,Unifamiliar por parcela,,,,no,40,2000,130,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991 96-ord-13017-2021 96-ord-13536-2023 96-reso-2022-833-gdeba-mggp 96-reso-2023-877-gdeba-mggp,"ORD. 13536/23 PROHÍBASE LA RADICACIÓN DE INDUSTRIAS NO AMIGABLES CON EL MEDIO AMBIENTE Y DE ESTABLECIMIENTOS QUE REALICEN TRATAMIENTOS DE RESIDUOS PATÓGENOS, MATADEROS, CURTIEMBRES, PROD. DE ADOBOS Y TEÑIDOS DE PIELES, FAB. DE ASBESTOS"
+DRC,Distrito Residencial Comercial,Alta,1.2,,0.6,21 M,Sí,Densidad neta de la zona (multifamiliar),,,,no,40,2000,600,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991 96-ord-13017-2021 96-reso-2022-833-gdeba-mggp,RETIROS SEGUN ORD 13017/21
+DUE 1a,Distrito De Urbanizacion Especial - Viviendas De Interes Social 1A,Media,1.2,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,8,130,365,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+DUE 1b,Distrito De Urbanizacion Especial - Viviendas De Interes Social 1B,Media,1.2,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,5.5,80,365,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+ESECS,Equipamiento Comunitario,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+EVUP,Cesiones Destinadas A Espacios Verdes Y Equipamiento Comunitario,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+I1,Zona Industrial,Nula,,,0.5,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+I2,Zona Industrial,Media,1,,0.6,,No,Unifamiliar por parcela,,,,no,12,300,120,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+I2A,Zona Industrial,Media,1,,0.6,,No,Unifamiliar por parcela,,,,no,15,450,125,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+IE U4,Zona Industrial Especial,Nula,,,0.25,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+IEU4,Zona Industrial Especial,Nula,,,0.6,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R1,Zona Residencial Alta Densidad,Alta,2.4,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,900,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R1U0,Zona Residencial Alta Densidad,Alta,2.4,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,900,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R2,Zona Residencial Media Densidad,Alta,1.8,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,20,600,600,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R2 AU1,Zona Residencial Media Densidad,Alta,1.8,,0.6,"11,20 M",Sí,Densidad neta de la zona (multifamiliar),,,,no,20,600,600,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,ORD 1424/81 PLANO 96-6-96
+R3,Zona Residencial Baja Densidad,Media,1,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R3A,Zona Residencial Baja Densidad,Media,1,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,170,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R3B,Zona Residencial Baja Densidad,Media,1,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R4,Zona Residencial Barrio - Parque,Media,1,,0.5,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,450,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R4Ue,Zona Residencial Especial,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,FRENTISTAS DE AV. LIBERTADOR ENTRE VICTORIANO MONTES Y PASTEUR
+RC2,Zona De Recuperacion,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,"ZONA INUNDABLE Y LIBRE DE OCUPACION, ESTARIA SUJETA A LA RECUPERACION MEDIANTE OBRAS DE INFRAESTRUCTURA QUE ASEGUREN SU SANEAMIENTO. PARA SER AFECTADA A USOS DEL SUELO, SE DEBERA PRESENTAR EL ESTUDIO HIDRAULICO."
+RC2RE2,Zona De Recuperacion,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,"ZONA INUNDABLE Y LIBRE DE OCUPACION, ESTARIA SUJETA A LA RECUPERACION MEDIANTE OBRAS DE INFRAESTRUCTURA QUE ASEGUREN SU SANEAMIENTO. PARA SER AFECTADA A USOS DEL SUELO, SE DEBERA PRESENTAR EL ESTUDIO HIDRAULICO."
+RR,Zona Recreativa - Residencial,Alta,1,,0.4,,Sí,Densidad neta de la zona (multifamiliar),,,,no,15,375,400,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,"FOS: 0,4 (UNIFAMILIAR) 0,2 (MULTIFAMILIAR) 0,5 (SECTOR COMERCIAL) FOT: 0,6 (UNIFAMILIAR) 1,4 (MULTIFAMILIAR) 1 (SECTOR COMERCIAL) SUP MIN 3000 M2 (MULTIFAMILIAR)"
+RR: RUM-CR-VOAD-ZEU-ZUM-CRP-EPS,Zona Recreativa - Residencial,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,CADA SUBZONA POSEE INDICADORES DIFERENTES.
+RRE,Zona Recreativa - Residencial Especial,Media,0.6,,0.6,,No,Unifamiliar por parcela,,,,no,20,600,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE,Zona Residencial De Urbanizacion Especial,Nula,,,0.6,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 1,Usos Especificos,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 2,Usos Especificos - Aerodromo San Fernando,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 3,Usos Especificos - Estado Nacional (Secretaria De Comunicaciones),Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 4,Usos Especificos - Cementerio Municipal,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 5,Usos Especificos - Galpones Victoria Del F. C. Mitre,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 6,Usos Especificos - Club San Fernando,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 7,Usos Especificos - Estado Nacional Argentino (Ministerio De Defensa - Cdo. En Jefe De La Marina),Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 8,Usos Especificos - Yacht Argentino,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 9 - EDENOR,Usos Especificos - Planta Transformadora Edenor,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+UE 9 - Re ECO,"Usos Especificos - Reserva Ecologica, Actividades Educativas",Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991 96-ord-13667-2024 96-reso-2026-90-gdeba-mggp,
+Z C,Zona Canal San Fernando,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,

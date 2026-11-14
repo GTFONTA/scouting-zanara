@@ -1,0 +1,71 @@
+# Scouting San Fernando — se superpone a config.yaml (ver src/config.py). Datos de tools/municipio_pba.py.
+# Normativa: UrbaSIG de la Provincia (Código de Edificación y Zonificación Ord. 3603 y modif. hasta 13667/24;
+# capa actualizada 03-2026). Decisiones tomadas sin Gonzalo (13-14/11/2026), a validar: ver NORMATIVA.md.
+
+municipio:
+  nombre: San Fernando
+  motor: zonas
+  en_prueba: true
+
+criterio:
+  m2_construibles_min: 1300
+  incidencia_max_usd: 400
+  incidencia_casi_max_usd: 500
+
+productos:
+  normativa_csv: municipios/san_fernando/normativa_zonas.csv
+  alias_zonas!: {}
+  comparables:
+    busquedas_mercadolibre:
+      - https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/san-fernando/_TOTAL*AREA_150-400
+    busquedas_zonaprop: []
+  flags:
+    calles_via_rapida: []
+    articulos!:
+      galpon_no_conforme: "uso no conforme: verificar Código de San Fernando"
+      pasivo_ambiental: "verificar antecedentes del predio"
+      gran_predio_3000: "predio grande: verificar cesiones Ley 8912"
+      manzana_7400: "posible manzana completa: verificar Ley 8912"
+      ue_10000: "más de 1 ha: verificar urbanización Ley 8912"
+      frentista_via_rapida: ""
+      lindero_zona_c_o_i: "lindero a zona comercial o industrial"
+      borde_de_zona: "posible predio en dos zonas: verificar plano"
+      requiere_cloaca_para_max: "indicadores máximos con agua y cloaca"
+      premio_ley_8912: "FOT/densidad con premios del Art. 47 Ley 8912: ver notas de la zona"
+      ver_observacion_zona: "la zona tiene observaciones en UrbaSIG: ver normativa_zonas.csv"
+      dos_frentes: "esquina o doble frente: más frente a la calle que el informado"
+
+zonificacion:
+  zonas_geojson: municipios/san_fernando/zonas.geojson
+  barrios_geojson: municipios/san_fernando/localidades.geojson
+  calles_geojson: municipios/san_fernando/calles.geojson
+  fot_max: 3.0                     # C1, C2, C2A
+  superficie_min_prefiltro: 433.3
+
+portales:
+  zonaprop:
+    start_urls:                    # sin probar todavía: primera consulta después del 16/11
+      - https://www.zonaprop.com.ar/terrenos-venta-san-fernando-mas-400-m2.html
+      - https://www.zonaprop.com.ar/casas-venta-san-fernando-mas-400-m2.html
+      - https://www.zonaprop.com.ar/bodegas-galpones-venta-san-fernando-mas-400-m2.html
+      - https://www.zonaprop.com.ar/edificios-venta-san-fernando.html
+  mercadolibre:
+    busquedas:
+      - url: https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/san-fernando/_TOTAL*AREA_400-*
+        tipologia: terreno
+      - url: https://inmuebles.mercadolibre.com.ar/casas/venta/bsas-gba-norte/san-fernando/_TOTAL*AREA_400-*
+        tipologia: casa
+      - url: https://inmuebles.mercadolibre.com.ar/depositos-y-galpones/venta/bsas-gba-norte/san-fernando/_TOTAL*AREA_400-*
+        tipologia: galpon
+
+sheet:
+  id: ""
+
+mail:
+  asunto: "Scouting San Fernando — {n} oportunidades nuevas ({fecha})"
+
+geocodificacion:
+  sufijo_direccion: ", San Fernando, Buenos Aires, Argentina"
+  alias_barrios!:
+    san fernando centro: San Fernando
+    villa del carmen: Victoria

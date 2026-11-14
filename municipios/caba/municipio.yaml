@@ -1,0 +1,60 @@
+# Scouting CABA — se superpone a config.yaml. Motor propio (src/motor_caba.py): edificabilidad por parcela
+# desde Ciudad 3D (Código Urbanístico), plusvalía de la Ley 6062 incluida en la incidencia.
+# Decisiones tomadas sin Gonzalo (13-14/11/2026), a validar: ver municipios/caba/NORMATIVA.md.
+
+municipio:
+  nombre: CABA
+  motor: caba
+  en_prueba: true
+
+caba:
+  api: https://epok.buenosaires.gob.ar          # la API que usa Ciudad 3D
+  usig: https://ws.usig.buenosaires.gob.ar      # geocodificador oficial de la Ciudad
+  uva_api: https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/31
+  cache: data/cache_caba.json
+  pausa_s: 0.7
+  max_consultas_por_corrida: 3000
+  errores_max: 8
+  bbox: [[-58.535, -58.33], [-34.71, -34.52]]   # [lon min, lon max], [lat min, lat max] de la Ciudad
+  tolerancia_superficie: 0.15   # parcela del pin con superficie ±15% de la del aviso = es la del aviso
+  m2_construibles_min: 1000
+  # incidencia con plusvalía / incidencia de la Ley 6062 del distrito (valuación oficial del m2 de suelo)
+  ratio_oportunidad: 0.8
+  ratio_casi: 1.0
+  sup_min_gran_predio: 1500
+  # Envolvente (cuando Ciudad 3D no da la superficie edificable): pisos = altura del plano límite / altura_piso_m,
+  # planta = superficie edificable en planta x ocupacion_planta (descuenta patios y pulmón; a calibrar con Gonzalo)
+  altura_piso_m: 3.0
+  ocupacion_planta: 0.65
+
+zonificacion:
+  superficie_min_prefiltro: 200   # con FOT 5-7 un lote de 200 m2 ya pasa los 1.000 m2 construibles
+
+portales:
+  zonaprop:
+    # Sin probar todavía (primera consulta después de la corrida de San Isidro del 16/11). CABA tiene mucho
+    # más volumen que San Isidro: medir páginas por búsqueda antes de activarla en el Programador de tareas.
+    start_urls:
+      - https://www.zonaprop.com.ar/terrenos-venta-capital-federal-mas-200-m2.html
+      - https://www.zonaprop.com.ar/casas-venta-capital-federal-mas-300-m2.html
+      - https://www.zonaprop.com.ar/bodegas-galpones-venta-capital-federal-mas-300-m2.html
+      - https://www.zonaprop.com.ar/edificios-venta-capital-federal.html
+  mercadolibre:
+    busquedas:
+      - url: https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/capital-federal/_TOTAL*AREA_200-*
+        tipologia: terreno
+      - url: https://inmuebles.mercadolibre.com.ar/casas/venta/capital-federal/_TOTAL*AREA_300-*
+        tipologia: casa
+      - url: https://inmuebles.mercadolibre.com.ar/depositos-y-galpones/venta/capital-federal/_TOTAL*AREA_300-*
+        tipologia: galpon
+
+productos:
+  comparables:                    # CABA no usa la vía loteo: sin búsquedas de lotes chicos
+    busquedas_mercadolibre: []
+    busquedas_zonaprop: []
+
+sheet:
+  id: ""
+
+mail:
+  asunto: "Scouting CABA — {n} oportunidades nuevas ({fecha})"

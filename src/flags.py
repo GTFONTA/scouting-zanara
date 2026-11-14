@@ -76,4 +76,5 @@ def flags(r: dict, normativa: dict, cfg: dict) -> list[str]:
         out += [x for x in z["flags"].split(";") if x and x != "pasivo_ambiental"]
     if r.get("requiere_cloaca"):
         out.append("requiere_cloaca_para_max")
-    return [f"{x} ({ARTICLES[x]})" if x in ARTICLES else x for x in dict.fromkeys(out)]
+    arts = {**ARTICLES, **(f.get("articulos") or {})}          # each municipio cites its own code
+    return [f"{x} ({arts[x]})" if arts.get(x) else x for x in dict.fromkeys(out)]

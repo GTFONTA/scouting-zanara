@@ -9,6 +9,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import traceback
 from collections import Counter
 from datetime import datetime
@@ -16,7 +17,7 @@ from pathlib import Path
 
 from . import comparables, fetch
 from .catastro import Catastro
-from .config import ROOT, load_config, path
+from .config import DEFAULT_MUNICIPIO, ROOT, load_config, path
 from .dedupe import dedupe, share_front
 from .evaluate import address_unknown, evaluate, front_matters, lot_product, sections
 from .flags import flags
@@ -201,16 +202,28 @@ def download(cfg: dict, run_dir: Path) -> tuple[dict, list[dict]]:
 
 
 def run(args) -> None:
-    cfg = load_config()
+    cfg = load_config(args.municipio)
+    m = cfg["municipio"]
+    if m["en_prueba"] and not os.environ.get("MAIL_TO_OVERRIDE"):
+        # a municipio in its trial weeks: the mail only to mail.para, or to the first address of MAIL_TO
+        to = cfg["mail"].get("para") or re.split(r"[,;]", os.environ.get("MAIL_TO", ""))[0].strip()
+        if to:
+            os.environ["MAIL_TO_OVERRIDE"] = to
     if args.reusar:
         run_dir = args.reusar if args.reusar.is_absolute() else ROOT / args.reusar
         items = {p: fetch.load_raw(run_dir, p) for p in MAPPERS if (run_dir / f"raw_{p}.json").exists()}
         salud = run_dir / "salud.json"
         health = json.loads(salud.read_text(encoding="utf-8")) if salud.exists() else []
     else:
-        run_dir = ROOT / "runs" / datetime.now().strftime("%Y-%m-%d_%H%M")      # never overwrite a previous run
+        base = ROOT / "runs" if m["slug"] == DEFAULT_MUNICIPIO else ROOT / "runs" / m["slug"]
+        run_dir = base / datetime.now().strftime("%Y-%m-%d_%H%M")      # never overwrite a previous run
         run_dir.mkdir(parents=True, exist_ok=True)
         items, health = download(cfg, run_dir)
+    if not cfg["sheet"].get("id"):                       # municipio without its own Sheet yet
+        args.sin_sheet = True
+    if m["motor"] == "caba":
+        from .motor_caba import run_caba
+        return run_caba(items, health, run_dir, cfg, args)
     history = []
     if cfg["productos"]["activo"] and not args.sin_sheet:
         try:
@@ -264,6 +277,7 @@ def main():
     ap.add_argument("--sin-sheet", action="store_true", help="no escribir la Google Sheet")
     ap.add_argument("--sin-mail", action="store_true", help="no mandar el mail")
     ap.add_argument("--mail-a", help="mandar el mail solo a esta dirección (pruebas)")
+    ap.add_argument("--municipio", default=None, help="slug de municipios/<slug>/ (por defecto san_isidro)")
     args = ap.parse_args()
     if args.mail_a:
         os.environ["MAIL_TO_OVERRIDE"] = args.mail_a
@@ -274,7 +288,7 @@ def main():
         print(tb)
         if not args.sin_mail:
             from .notify import send_error
-            send_error(tb, load_config())
+            send_error(tb, load_config(args.municipio))
         raise
 
 

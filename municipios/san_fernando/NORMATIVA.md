@@ -1,0 +1,28 @@
+# San Fernando — normativa y decisiones a validar
+
+**Fuente:** UrbaSIG de la Provincia (`urbasig:_zonificacion`, partido 096), capa actualizada en **03-2026**. La base es el Código de Edificación y Zonificación (Ord. 3603), con modificaciones por las Ord. 13017/21, 13536/23 y 13667/24. Lo baja `python tools/municipio_pba.py san_fernando`.
+
+**Tipo B** (capa vectorial con indicadores), y de las tres es la más actualizada.
+
+## Cómo se arma cada zona (decidido el 14/11/2026, sin Gonzalo)
+
+- **FOT y densidad:** los de UrbaSIG (en San Fernando casi no hay valores potenciales).
+- **Multifamiliar según la densidad:**
+  - **Sí, con 300 hab/ha o más:** R1, R2, C1, C2, C2A, C2B, C4Ue, DDP, DRC y RR.
+  - **Condicional, entre 150 y 299 hab/ha:** R3, R3A, R3B, R4, C3 y C3A. Un hit ahí sale como casi.
+  - **No:** I2, I2A, DI, BPN y RRE.
+  - **DUE 1a / 1b** (urbanización especial de vivienda social, parcelas de 80 a 130 m²): Condicional.
+- **Sin producto:** I1, IE U4, los UE, equipamiento comunitario, cesiones, zonas de recuperación inundables, canal, islas y R4Ue (frentistas de Libertador: UrbaSIG no trae indicadores).
+- **Lotes con frente propio:** parcela y frente mínimos de cada zona.
+- **Casas agrupadas:** no se calculan, porque UrbaSIG no da m² por vivienda en San Fernando.
+- **Observaciones de UrbaSIG que cambian el FOT** (por ejemplo, C3A llega a 1,8 sobre Av. Avellaneda, y C4Ue tiene FOT 2 para multifamiliar): aparecen como el flag `ver_observacion_zona`, con el texto en `notas`.
+
+## Umbrales
+
+Los mismos de San Isidro (400 / 500 USD/m², 1.300 m², ratio de loteo 0,6, gran predio desde 3.000 m²). **Decisión de Gonzalo.**
+
+## Para validar con Gonzalo
+
+1. El corte de densidad para multifamiliar (300 hab/ha Sí, 150 Condicional).
+2. Los umbrales propios de San Fernando.
+3. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".
