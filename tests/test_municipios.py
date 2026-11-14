@@ -33,7 +33,7 @@ def test_pba_overlay(slug):
     assert cfg["productos"]["alias_zonas"] == {}                       # '!' replaced San Isidro's aliases
     assert "la horqueta" not in cfg["geocodificacion"]["alias_barrios"]
     assert all(slug.replace("_", "-") in u for u in cfg["portales"]["zonaprop"]["start_urls"])
-    assert cfg["criterio"]["incidencia_max_usd"] == 400                 # inherited thresholds stay
+    assert cfg["criterio"]["incidencia_max_usd"] == 350                 # Gonzalo, 14/11/2026
 
 
 def _zonaprop_items(points):

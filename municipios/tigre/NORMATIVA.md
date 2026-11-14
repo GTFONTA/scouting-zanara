@@ -17,11 +17,9 @@
 - **Casas agrupadas:** solo donde UrbaSIG da "una vivienda cada X m² de lote" (um2), con 5 m de frente propio por casa (el mismo mínimo que en San Isidro).
 - **Delta:** excluido. Solo cuenta el área continental zonificada; las islas no tienen zonas en la capa.
 
-## Umbrales
+## Umbrales (decididos por Gonzalo el 14/11/2026)
 
-Por ahora son los mismos de San Isidro: incidencia < 400 USD/m² para oportunidad y entre 400 y 500 para casi, más de 1.300 m² construibles, ratio de loteo 0,6 y gran predio desde 3.000 m².
-
-**Decisión de Gonzalo:** Tigre tiene valores de venta más bajos que San Isidro, así que probablemente le corresponda un umbral de incidencia menor.
+Incidencia < 350 USD/m² para oportunidad y entre 350 y 450 para casi: más bajos que San Isidro, porque Tigre vende más barato. El resto es como en San Isidro: más de 1.300 m² construibles, ratio de loteo 0,6 y gran predio desde 3.000 m².
 
 ## Búsquedas
 
@@ -30,7 +28,6 @@ Por ahora son los mismos de San Isidro: incidencia < 400 USD/m² para oportunida
 
 ## Para validar con Gonzalo
 
-1. La clasificación de multifamiliar de cada zona, sobre todo C1 a C4: UrbaSIG les asigna densidad 150 hab/ha, y con agua y cloaca llegarían a 2.000 hab/ha.
+1. Si C1 a C4 y R4 admiten multifamiliar (UrbaSIG da densidad 150 hab/ha, y con agua y cloaca llegaría a 2.000 hab/ha). **Gonzalo lo revisa en el código** (14/11/2026).
 2. Si conviene usar los premios del Art. 47 en vez de dejarlos solo como flag.
-3. Los umbrales propios de Tigre.
-4. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".
+3. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".

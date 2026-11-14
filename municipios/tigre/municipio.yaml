@@ -1,16 +1,16 @@
 # Scouting Tigre — se superpone a config.yaml (ver src/config.py). Datos generados por tools/municipio_pba.py.
 # Normativa: UrbaSIG de la Provincia (Código de Zonificación Ord. 1894/96 y modif. hasta 3776/21; capa 09-2022).
-# Decisiones tomadas sin Gonzalo (13-14/11/2026), a validar: ver municipios/tigre/NORMATIVA.md.
+# Decisiones tomadas sin Gonzalo (13-14/11/2026); umbrales de Gonzalo del 14/11. Ver municipios/tigre/NORMATIVA.md.
 
 municipio:
   nombre: Tigre
   motor: zonas
   en_prueba: true                  # mail marcado [EN PRUEBA], solo a mail.para (o la primera dirección de MAIL_TO)
 
-criterio:                          # mismos umbrales que San Isidro hasta que Gonzalo defina los de Tigre
+criterio:                          # Gonzalo, 14/11/2026: más bajos que San Isidro (400/500) porque Tigre vende más barato
   m2_construibles_min: 1300
-  incidencia_max_usd: 400
-  incidencia_casi_max_usd: 500
+  incidencia_max_usd: 350
+  incidencia_casi_max_usd: 450
 
 productos:
   normativa_csv: municipios/tigre/normativa_zonas.csv

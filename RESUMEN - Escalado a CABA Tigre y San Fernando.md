@@ -37,7 +37,7 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 - **Cero consultas a Zonaprop y Mercado Libre para los municipios nuevos antes del 16/11**, para no arriesgar la corrida de San Isidro. Por eso las URLs de búsqueda están armadas por patrón y sin probar.
 - **Salidas separadas por municipio:** carpeta `runs/<slug>/` y mail con su propio asunto, como se había decidido el 13/11.
 - **Sin Sheet propia mientras estén en prueba:** el mail va solo a Gonzalo, marcado "[EN PRUEBA]". Crear las Sheets queda para cuando se activen.
-- **Umbrales de Tigre y San Fernando iguales a los de San Isidro** (400 / 500 USD/m², 1.300 m², ratio de loteo 0,6), porque la prioridad es no perder oportunidades. Probablemente convenga bajarlos, porque esos mercados venden más barato.
+- **Umbrales de Tigre y San Fernando:** 350 / 450 USD/m² (**decidido por Gonzalo el 14/11/2026**); el resto como en San Isidro (1.300 m², ratio de loteo 0,6).
 - **Mismos productos que en San Isidro** (multifamiliar, lotes, agrupadas, loteo con calle), pero con los indicadores de cada código. Las reglas de cada zona están en `municipios/<slug>/normativa_zonas.csv` y la explicación en `NORMATIVA.md`.
 
 **Tigre**
@@ -68,9 +68,9 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 
 ## Dudas abiertas (para Gonzalo)
 
-1. **CABA:** ¿la plusvalía entra en la incidencia? ¿Sirve la incidencia de la Ley 6062 como referencia del umbral, o prefiere un monto fijo o umbrales por comuna?
+1. ~~**CABA:** plusvalía y referencia del umbral~~ → **decidido por Gonzalo el 14/11/2026:** la plusvalía entra en la incidencia y la referencia es la Ley 6062 por distrito (0,8 / 1,0).
 2. **CABA:** la envolvente estimada (3 m por piso y 65% de la planta) hay que compararla con Ciudad 3D en 3 o 4 casos reales.
-3. **Tigre y San Fernando:** umbrales propios, y las clasificaciones de multifamiliar que dudé: las zonas C de Tigre (densidad 150, o 2.000 con cloaca) y R3 / R4 de San Fernando.
+3. **Tigre y San Fernando:** los umbrales quedaron en 350 / 450 (Gonzalo, 14/11). Las zonas C1 a C4 y R4 de Tigre, y R3, R4, C3 y C3A de San Fernando: **Gonzalo revisa en los códigos si admiten multifamiliar**.
 4. **Volumen:** CABA y Tigre pueden superar lo que Zonaprop tolera por corrida (unas 60 páginas). Si es así, hay que subir los filtros de superficie o hacer primero la Fase C (descarga incremental con presupuesto diario).
 5. **Validación manual:** 10 a 15 avisos reales por municipio, pasados a mano, antes de sacarlos del modo prueba (checklist de la sección 6 del prompt).
 

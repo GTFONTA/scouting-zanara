@@ -1,16 +1,16 @@
 # Scouting San Fernando — se superpone a config.yaml (ver src/config.py). Datos de tools/municipio_pba.py.
 # Normativa: UrbaSIG de la Provincia (Código de Edificación y Zonificación Ord. 3603 y modif. hasta 13667/24;
-# capa actualizada 03-2026). Decisiones tomadas sin Gonzalo (13-14/11/2026), a validar: ver NORMATIVA.md.
+# capa actualizada 03-2026). Decisiones tomadas sin Gonzalo (13-14/11/2026); umbrales de Gonzalo del 14/11. Ver NORMATIVA.md.
 
 municipio:
   nombre: San Fernando
   motor: zonas
   en_prueba: true
 
-criterio:
+criterio:                          # Gonzalo, 14/11/2026: más bajos que San Isidro (400/500) porque San Fernando vende más barato
   m2_construibles_min: 1300
-  incidencia_max_usd: 400
-  incidencia_casi_max_usd: 500
+  incidencia_max_usd: 350
+  incidencia_casi_max_usd: 450
 
 productos:
   normativa_csv: municipios/san_fernando/normativa_zonas.csv

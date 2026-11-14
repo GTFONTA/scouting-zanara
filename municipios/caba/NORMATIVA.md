@@ -38,9 +38,12 @@ Todo queda en caché en `data/cache_caba.json`: una consulta por parcela, nunca 
 
 Terrenos desde 200 m², casas y galpones desde 300 m², edificios sin filtro. **Pendiente:** medir el volumen después del 16/11. CABA tiene muchas más páginas que San Isidro y, sin la descarga incremental (Fase C), puede no entrar en el presupuesto semanal de Zonaprop.
 
+## Decidido por Gonzalo (14/11/2026)
+
+- La plusvalía entra en la incidencia.
+- La referencia es la incidencia de la Ley 6062 del distrito: oportunidad hasta 0,8 y casi hasta 1,0.
+
 ## Para validar con Gonzalo
 
-1. ¿La plusvalía entra en la incidencia? Hoy sí.
-2. ¿Usar como referencia la incidencia de la Ley 6062, con 0,8 para oportunidad y 1,0 para casi? Otras opciones: un monto fijo, o umbrales por comuna.
-3. La envolvente estimada (3 m por piso, 65% de la planta): comparar 3 o 4 casos con lo que muestra Ciudad 3D.
-4. El mínimo de 1.000 m² construibles y el gran predio desde 1.500 m².
+1. La envolvente estimada (3 m por piso, 65% de la planta): comparar 3 o 4 casos con lo que muestra Ciudad 3D.
+2. El mínimo de 1.000 m² construibles y el gran predio desde 1.500 m².

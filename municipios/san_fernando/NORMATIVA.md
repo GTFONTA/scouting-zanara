@@ -17,12 +17,11 @@
 - **Casas agrupadas:** no se calculan, porque UrbaSIG no da m² por vivienda en San Fernando.
 - **Observaciones de UrbaSIG que cambian el FOT** (por ejemplo, C3A llega a 1,8 sobre Av. Avellaneda, y C4Ue tiene FOT 2 para multifamiliar): aparecen como el flag `ver_observacion_zona`, con el texto en `notas`.
 
-## Umbrales
+## Umbrales (decididos por Gonzalo el 14/11/2026)
 
-Los mismos de San Isidro (400 / 500 USD/m², 1.300 m², ratio de loteo 0,6, gran predio desde 3.000 m²). **Decisión de Gonzalo.**
+Incidencia < 350 USD/m² para oportunidad y entre 350 y 450 para casi. El resto es como en San Isidro: 1.300 m², ratio de loteo 0,6 y gran predio desde 3.000 m².
 
 ## Para validar con Gonzalo
 
-1. El corte de densidad para multifamiliar (300 hab/ha Sí, 150 Condicional).
-2. Los umbrales propios de San Fernando.
-3. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".
+1. Si R3, R3A, R3B, R4, C3 y C3A admiten multifamiliar (hoy son Condicional). **Gonzalo lo revisa en el código** (14/11/2026).
+2. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".
