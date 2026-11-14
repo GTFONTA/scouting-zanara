@@ -1,0 +1,18 @@
+[
+ {
+  "portal": "zonaprop",
+  "paginas_ok": 54,
+  "avisos": 1516,
+  "errores": [
+   "https://www.zonaprop.com.ar/edificios-venta-san-isidro.html: se bajaron 51 de 54 avisos"
+  ],
+  "falla": true
+ },
+ {
+  "portal": "mercadolibre",
+  "paginas_ok": 119,
+  "avisos": 1256,
+  "errores": [],
+  "falla": false
+ }
+]
