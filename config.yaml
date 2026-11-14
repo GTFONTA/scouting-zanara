@@ -1,0 +1,214 @@
+# Scouting de tierra San Isidro — parámetros (ver CLAUDE.md)
+
+# Archivos con secretos (claves de mail, service account). Van FUERA de la carpeta de Google Drive.
+archivos_secretos:
+  - ~/Desktop/Scouting/.env
+
+criterio:
+  m2_construibles_min: 1300        # oportunidad si m2 construibles > este valor
+  incidencia_max_usd: 400          # ... y incidencia < este valor (USD/m2 construible)
+  incidencia_casi_max_usd: 500     # casi-oportunidad: incidencia entre max y este valor
+
+# Fase 4 — evaluación por producto (multifamiliar, agrupadas, loteo, barrio). Validada por Gonzalo el 28/09/2026.
+# Con activo: false se vuelve exactamente a la regla de Fase 2 (FOT de fot_por_zona.csv, mismo mail y misma Sheet).
+# tools/backtest_fase4.py compara las dos reglas sobre crudos ya bajados, sin tocar la Sheet ni mandar mail.
+productos:
+  activo: true
+  normativa_csv: data/normativa_zonas.csv
+  # Zona de la capa (plano 2022) -> filas de normativa_zonas.csv. Con más de una fila se evalúan todas y se usa
+  # la más favorable (CR1: el plano no distingue los sectores A y B).
+  alias_zonas:
+    Ca1C: [Ca1-AC]
+    Rma2C: [Rma2-AC]
+    APP1: [APP/1]
+    APP2: [APP/2]
+    EPR: [EPr]
+    CR1: [CR1-A, CR1-B]
+  pct_calle: 0.25                  # superficie que se va en calle y cesiones en un loteo con calle interna
+  sup_min_loteo_calle: 5000        # por debajo, abrir calle no rinde
+  sup_min_ue: 10000                # Urbanización Especial (Art. 1.2.1.1)
+  sup_min_gran_predio: 3000        # Art. 1.2.1.19: se reporta siempre, sin filtro de precio
+  sup_min_manzana: 7400            # Arts. 1.2.3.1 y 1.2.1.14 inc. 2
+  personas_por_unidad: 4
+  unidades_min: 4
+  # Loteo/agrupadas es oportunidad si USD por unidad <= este ratio x valor de un lote chico de la localidad
+  # (Gonzalo, 28/09/2026). En el backtest del 26/09: 0,5 -> 7 hits, 0,6 -> 19, 0,7 -> 37.
+  umbral_ratio_loteo: 0.6
+  comparables:
+    superficie_min: 150            # lotes chicos: tipología terreno entre estas superficies
+    superficie_max: 600
+    avisos_min: 5                  # por localidad; con menos se usa la mediana de todo el partido
+    semanas: 12                    # historial acumulado en la pestaña "comparables" de la Sheet
+    # Búsquedas extra de lotes chicos (las principales arrancan en 400 m2). Solo con activo: true.
+    # Mercado Libre: 186 avisos = 4 páginas, sin abrir fichas (27/09/2026).
+    busquedas_mercadolibre:
+      - https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/san-isidro/_TOTAL*AREA_150-400
+    # Zonaprop: ~280 avisos estimados = ~10 páginas. Falta probar el formato de URL con superficie máxima
+    # (1-2 consultas, después de una corrida semanal); hasta entonces, vacía.
+    busquedas_zonaprop: []
+  # Frente real del lote: parcelas de ARBA (WFS público de IDERA). Solo para avisos con pin donde el frente puede
+  # cambiar las unidades; resultados en caché por aviso. Calibrado con 37 avisos que dicen su frente (27/09/2026).
+  catastro:
+    wfs: https://geo.arba.gov.ar/geoserver/idera/wfs
+    radio_m: 10                    # parcela a menos de esto del pin (con el pin a 20 m o más suele ser otro lote)
+    radio_consulta_m: 60           # parcelas que se piden alrededor del pin (más, si el lote es grande)
+    tolerancia_una_parcela: 0.05   # superficie de la parcela dentro de ±5% de la del aviso
+    tolerancia_varias_parcelas: 0.03
+    max_parcelas: 3                # lote formado por hasta 3 parcelas linderas
+    pausa_s: 0.5
+    max_consultas_por_corrida: 600
+    errores_max: 5                 # con 5 errores seguidos se deja de consultar y se reporta como falla
+    cache: data/cache_catastro.json
+  flags:
+    distancia_zona_c_o_i_m: 30     # lindero a zona comercial o industrial (Arts. 1.2.1.16 y 1.2.1.20 a)
+    distancia_borde_zona_m: 25     # posible predio en dos zonas (Art. 1.2.2.7)
+    # Rb y Rmb2 frentistas a estas vías: hasta +100% de agrupadas (Art. 1.2.1.16)
+    calles_via_rapida: [sucre, colectora, panamericana, camino real, patagonia, acceso norte, acceso tigre, ramal tigre]
+
+zonificacion:
+  zonas_geojson: data/zonas_san_isidro.geojson
+  fot_csv: data/fot_por_zona.csv
+  barrios_geojson: data/barrios_san_isidro.geojson
+  # Calles del partido (OpenStreetMap, tools/calles_osm.py): para avisos sin número de calle se usa el
+  # FOT máximo de las zonas que toca esa calle (o la esquina), no el de toda la localidad
+  calles_geojson: data/calles_san_isidro.geojson
+  # FOT máximo del partido: Ca1 / Ca1C (edificio en torre) = 3,0
+  fot_max: 3.0
+  # Terrenos más chicos que esto no pueden superar m2_construibles_min en ninguna zona
+  superficie_min_prefiltro: 433.3  # = 1300 / 3.0
+  # Margen por error de geolocalización + vectorización: se usa el FOT más alto de las zonas
+  # a menos de esta distancia del punto (prioriza no perder oportunidades)
+  radio_busqueda_zona_m: 30
+  # Si el punto no cae en ninguna zona (calle, vía, borde), se busca hasta esta distancia
+  radio_max_sin_zona_m: 150
+  # Un pin hasta esta distancia afuera del límite del partido se considera dentro (lotes sobre la calle límite)
+  margen_partido_m: 250
+  # Mercado Libre a veces pone el pin afuera del partido aunque el aviso diga una localidad de San Isidro
+  # (ej. "Fleming 2800, Martínez" a 1 km). Para estos portales, un pin afuera a menos de esta distancia,
+  # con localidad de San Isidro, se toma como error de carga y se ubica por calle/localidad.
+  # (Dentro del partido sus pines son buenos: en 603 inmuebles publicados en ambos portales, mediana 5 m.)
+  portales_pin_fuera_revisar: [mercadolibre]
+  distancia_max_pin_fuera_m: 1500
+
+portales:
+  zonaprop:
+    # Búsquedas del partido de San Isidro (incluye Martínez, Beccar, Boulogne, Acassuso, V. Adelina).
+    # "-mas-400-m2" es el filtro de superficie de Zonaprop, redondeado hacia abajo de superficie_min_prefiltro.
+    # Los edificios van sin filtro (pocos avisos y la superficie suele venir mal cargada).
+    start_urls:
+      - https://www.zonaprop.com.ar/terrenos-venta-san-isidro-mas-400-m2.html
+      - https://www.zonaprop.com.ar/casas-venta-san-isidro-mas-400-m2.html
+      - https://www.zonaprop.com.ar/bodegas-galpones-venta-san-isidro-mas-400-m2.html
+      - https://www.zonaprop.com.ar/edificios-venta-san-isidro.html
+    # Zonaprop pide un desafío de navegador (HTTP 403) desde la página 10 de cualquier búsqueda.
+    # Las búsquedas de más de 9 páginas se recorren por tramos de precio (orden ascendente + "más de USD X").
+    max_paginas_por_busqueda: 9    # 30 avisos por página
+    # Además corta por volumen: tras ~150 páginas en pocas horas (pruebas del 26/09) bloqueó hasta la página 1.
+    # Una corrida semanal son ~57 páginas: ir despacio y, si bloquea, esperar largo.
+    pausa_entre_paginas_s: 8       # espera entre páginas (se suma un extra al azar de 0 a este valor): ~12 s
+    pausa_reintento_s: 20          # error de red común
+    espera_bloqueo_s: 600          # ante un 403/429, esperar 10 minutos antes de reintentar
+    reintentos: 3                  # errores de red comunes
+    reintentos_bloqueo: 1          # ante un 403/429: un solo reintento; después la búsqueda pasa al final de la corrida
+    espera_recupero_s: 1500        # al final, esperar 25 min y reintentar una vez las búsquedas bloqueadas (19/10: se
+                                   # destrabó ~40 min después del primer 403)
+    cobertura_minima: 0.95         # si una búsqueda baja menos de este % de lo que anuncia el portal, es falla
+
+  mercadolibre:
+    # Las páginas de resultados dan precio y dirección; superficie total y coordenadas salen de la ficha,
+    # que se abre una sola vez por aviso y queda en caché. "_TOTAL*AREA_400-*" = más de 400 m2 totales.
+    busquedas:
+      - url: https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/san-isidro/_TOTAL*AREA_400-*
+        tipologia: terreno
+      - url: https://inmuebles.mercadolibre.com.ar/casas/venta/bsas-gba-norte/san-isidro/_TOTAL*AREA_400-*
+        tipologia: casa
+      - url: https://inmuebles.mercadolibre.com.ar/depositos-y-galpones/venta/bsas-gba-norte/san-isidro/_TOTAL*AREA_400-*
+        tipologia: galpon
+    cache: data/cache_mercadolibre.json
+    max_detalles_por_corrida: 2000 # tope de fichas nuevas por corrida (la primera corrida abre todas)
+    pausa_entre_paginas_s: 3
+    pausa_reintento_s: 20
+    espera_bloqueo_s: 300
+    reintentos: 2
+    reintentos_bloqueo: 1
+    errores_fichas_max: 10         # fichas sueltas que no abren = aviso menor; más que esto = falla
+    cobertura_minima: 0.95
+
+  argenprop:
+    # Deshabilitado: responde con un desafío de navegador (AWS WAF) incluso a una consulta cada 45 s.
+    # No se intenta sortearlo.
+    habilitado: false
+
+sheet:
+  # ID de la Google Sheet (lo que va entre /d/ y /edit en el link). Compartida con la service account como Editor.
+  id: "1nBv5gpEf75YmCbLUoGDCpVZ4XvNYbaAnXoEuAfzGA9w"
+
+mail:
+  asunto: "Scouting San Isidro — {n} oportunidades nuevas ({fecha})"
+
+deduplicacion:
+  tolerancia: 0.05          # superficie y precio dentro de ±5%
+  distancia_max_m: 150      # ... y a menos de 150 m (o mismo barrio si uno es aproximada_barrio)
+  distancia_max_misma_calle_m: 3000   # ... o misma calle a menos de 3 km (pines imprecisos entre portales)
+
+normalizacion:
+  dolar_api: https://dolarapi.com/v1/dolares/bolsa   # dólar MEP para avisos en pesos
+  dolar_intentos: 3                # consultas a la API antes de darla por caída
+  dolar_pausa_s: 10                # espera tras cada intento fallido, creciente: 10 s, 20 s, ...
+  # Última cotización que dio la API (se reescribe en cada corrida). Si la API no responde se usa esta, si tiene
+  # hasta dolar_respaldo_max_dias; si no, los avisos en pesos se descartan (sin_cotizacion_dolar). Cualquiera de
+  # las dos sale como falla en la línea roja del mail.
+  dolar_respaldo: data/cotizacion_dolar.json
+  dolar_respaldo_max_dias: 30
+  # Tipologías del portal (en minúscula) -> tipología normalizada. Lo que no esté acá se descarta.
+  tipologias_incluidas:
+    terreno: terreno
+    terrenos: terreno
+    lote: terreno
+    casa: casa
+    casas: casa
+    chalet: casa
+    quinta: quinta
+    quintas: quinta
+    galpón: galpon
+    galpon: galpon
+    bodega-galpón: galpon
+    bodegas/galpones: galpon
+    depósito: galpon
+    deposito: galpon
+    edificio: edificio
+    edificios: edificio
+    edificio en block: edificio
+  # Si el título matchea alguna de estas expresiones, se descarta (regex, sin distinguir mayúsculas).
+  # "PH" en cualquier parte; depto/departamento/unidad solo al comienzo del título, porque
+  # "Casa + departamento independiente" o "Edificio con local y 2 departamentos" sí sirven.
+  titulo_excluir:
+    - '\bPH\b'
+    - '^\W*(depto|dpto|departamento|monoambiente|unidad funcional|unidad)\b'
+  # Precio menor a esto = precio simbólico ("consultar" cargado como USD 1): se descarta como sin precio
+  precio_usd_minimo_valido: 10000
+  # Precio por m2 de terreno por debajo de esto = superficie mal cargada. En la corrida del 26/09 todos
+  # los casos bajo USD 50/m2 eran errores de carga (casas con 40.000 a 11.270.000 m2)
+  precio_min_usd_m2_terreno: 50
+  # Precios USD fuera de este rango se marcan como sospechosos (no se descartan)
+  precio_usd_sospechoso_min: 20000
+  precio_usd_sospechoso_max: 30000000
+
+geocodificacion:
+  # Con GOOGLE_GEOCODING_KEY se usa Google; si no, Nominatim (1 consulta por segundo)
+  sufijo_direccion: ", San Isidro, Buenos Aires, Argentina"
+  user_agent: zanara-scouting-san-isidro/0.1
+  # Nombres de barrio del portal que no son localidades -> localidad (para el fallback por barrio)
+  alias_barrios:
+    la horqueta: Beccar
+    las lomas de san isidro: San Isidro
+    lomas de san isidro: San Isidro
+    las lomas: San Isidro
+    santa rita: Boulogne Sur Mer
+    boulogne: Boulogne Sur Mer
+    bajo de san isidro: San Isidro
+    barrio parque aguirre: Acassuso
+    san isidro labrador: San Isidro
+    la calabria: Martínez
+    la merced: San Isidro
+    carreras: Beccar

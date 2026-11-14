@@ -1,0 +1,57 @@
+zona,fot,fos,altura_max,fuente,notas
+Ra1,2.2,0.6,25m torre / 13.60m entre medianeras,COU San Isidro TO 2022 p.119,"+10% por lote unificado hasta +20% (art. 1.2.1.3), no aplicado; con incremento Hm hasta 41m"
+Ra2,2.2,0.6,20m torre / 13.60m entre medianeras,COU San Isidro TO 2022 p.121,"FOT 2.2 en torre, 2.0 entre medianeras; +20% por unificación no aplicado"
+Ra3,2.2,0.6,20m torre / 13.60m entre medianeras,COU San Isidro TO 2022 p.122,"FOT 2.2 en torre, 2.0 entre medianeras; +20% por unificación no aplicado"
+Rma,0,,,COU San Isidro TO 2022 p.123,"Conjuntos habitacionales consolidados: no se admiten nuevos parcelamientos ni ampliaciones residenciales"
+Rma1,1.5,0.6,10.80m (PB + 2 pisos),COU San Isidro TO 2022 p.124,
+Rma2,1.8,0.6,11.50m con PB libre,COU San Isidro TO 2022 p.126,
+Rma2C,1.8,0.6,11.50m con PB libre,COU San Isidro TO 2022 p.126,"Etiqueta del plano 'Rma2C' = Rma2 en Área Central (hoja 'Rma2-AC'); supuesto"
+Rma3,1.5,0.6,10.80m (PB + 2 pisos),COU San Isidro TO 2022 p.127,
+Rma4,1,0.25,11m,COU San Isidro TO 2022 p.129,FOS muy bajo (0.25)
+Rma5,1.8,0.6,11.50m (PB + 3 pisos),COU San Isidro TO 2022 p.130,"1.2 sin cloacas; 1.5 con cloacas; 1.8 con cloacas y parcela >= 400m2 y 15m de frente (valor usado)"
+Rm1,1.2,0.6,8.50m,COU San Isidro TO 2022 p.132,
+Rm2,1,0.6,8.50m,COU San Isidro TO 2022 p.135,Edificación sobre Línea Municipal
+Rm3,1.2,0.6,8.50m,COU San Isidro TO 2022 p.137,
+Rm4,1.2,0.6,8.50m,COU San Isidro TO 2022 p.138,
+Rmb1,1,0.5,8.50m,COU San Isidro TO 2022 p.139,
+Rmb2,1,0.5,8.50m,COU San Isidro TO 2022 p.141,
+Rmb3,1,0.6,8.50m,COU San Isidro TO 2022 p.145,
+Rmb4,1,0.5,8.50m,COU San Isidro TO 2022 p.146,
+RmbB,1,0.5,8.50m desde cota +4.44 IGN,COU San Isidro TO 2022 p.148,Bajo de San Isidro
+Rmb5,1,0.5,8.50m,COU San Isidro TO 2022 p.149,
+Rb1,1,0.5,8.50m,COU San Isidro TO 2022 p.151,Residencial exclusivo
+Rb2,0.9,0.45,8.50m,COU San Isidro TO 2022 p.153,Residencial exclusivo; tratamiento especial en barranca
+Rb3,0.8,0.4,8.50m,COU San Isidro TO 2022 p.155,Residencial exclusivo
+Rb4,0.8,0.4,8.50m,COU San Isidro TO 2022 p.158,Residencial exclusivo
+RbPN,0.6,0.3,8m,COU San Isidro TO 2022 p.159,Barrio Parque Náutico
+APP1,1,0.5,8.50m,COU San Isidro TO 2022 p.162,Área de Preservación Patrimonial: cada caso a consideración de las O.T.
+APP2,1.8,0.6,9.50m,COU San Isidro TO 2022 p.168,Área de Preservación Patrimonial: cada caso a consideración del D.E.
+Ca1,3,0.6,27.50m torre / 11.50m entre medianeras,COU San Isidro TO 2022 p.170,"FOT 3 en torre, 1.8 entre medianeras (2.0 en radios 1, 2, 6, 7)"
+Ca1C,3,0.6,27.50m torre / 11.50m entre medianeras,COU San Isidro TO 2022 p.170,"Etiqueta del plano 'Ca1C' sin hoja propia: se asume Ca1 (Ca1-AC); verificar"
+Cma1,1.8,0.6,11.50m,COU San Isidro TO 2022 p.172,
+Cma2,1.8,0.6,11.50m,COU San Isidro TO 2022 p.173,
+Cma3,1.8,0.6,11.50m,COU San Isidro TO 2022 p.175,Radio 3 (Av. B. Ader): FOT 1.2
+Cma4,1.8,0.6,11.50m (PB + 3 pisos),COU San Isidro TO 2022 p.178,"1.2 sin cloacas; 1.5 con cloacas; 1.8 con cloacas y parcela >= 400m2 y 15m de frente (valor usado)"
+Cm1,1.2,0.6,8.50m,COU San Isidro TO 2022 p.180,
+Cm2,1.5,0.5,11.50m (PB + 3 pisos),COU San Isidro TO 2022 p.182,
+Cm3,1.2,0.6,8.50m,COU San Isidro TO 2022 p.184,
+Cm4,1.2,0.6,8.50m,COU San Isidro TO 2022 p.185,"FOT base 1.0; hasta 1.2 con incremento proporcional de cocheras (valor usado)"
+Cm5,1.2,0.5,10m (FOS 0.5) / 12m (FOS 0.4),COU San Isidro TO 2022 p.187,
+Cmb1,1,0.5,8.50m,COU San Isidro TO 2022 p.189,
+Cmb3,1,0.5,8.50m,COU San Isidro TO 2022 p.190,
+CmbB,1,0.5,8m,COU San Isidro TO 2022 p.191,Bajo de San Isidro
+Cb1,1,0.5,8.50m,COU San Isidro TO 2022 p.192,
+Cb2,1,0.5,8.50m desde cota +4.44 IGN,COU San Isidro TO 2022 p.194,
+CE1,1.2,0.4,16m,COU San Isidro TO 2022 p.195,
+CR1,2.5,0.6,,COU San Isidro TO 2022 p.197,"Sector A residencial: FOT 2.5; Sector B residencial: 1.2; usos no residenciales > 1 ha: 1.0 (se usa el máximo)"
+ID,1.2,0.6,8.50m a 12m según superficie,COU San Isidro TO 2022 p.201,Industrial; uso residencial no predominante
+IE,1.2,0.6,8.50m a 12m según superficie,COU San Isidro TO 2022 p.203,Industrial especial
+IN,1.2,0.6,8.50m a 12m según superficie,COU San Isidro TO 2022 p.205,Industria náutica
+IP,1,0.5,12m,COU San Isidro TO 2022 p.207,Precinto industrial (no figura en el plano 2022)
+Ec,0.5,0.25,9.50m,COU San Isidro TO 2022 p.208,Esparcimiento; cada caso tratado en forma particular
+EH,1,0.6,11.50m,COU San Isidro TO 2022 p.209,Hipódromo: tratamiento especial como Urbanización Especial
+E,0.5,,,COU San Isidro TO 2022 p.211,Verde permanente; índices fijados caso por caso en base a Ec
+EPR,,,,COU San Isidro TO 2022 p.212,Parque Municipal de la Ribera; tratamiento particular
+DUP1,1.2,0.6,8.50m,COU San Isidro TO 2022 p.214,
+AR,,,,COU San Isidro TO 2022 p.115,Uso específico (radio único); sin indicadores en el código
+Ru,,,,COU San Isidro TO 2022 p.116,Uso específico (predios ferroviarios y otros); sin indicadores en el código

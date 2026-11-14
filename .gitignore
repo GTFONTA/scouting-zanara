@@ -1,0 +1,20 @@
+# Secretos (viven en C:\Users\ZN - GF\Desktop\Scouting\, pero por las dudas)
+.env
+*.env
+service_account*.json
+credentials*.json
+
+# Corridas: crudos, resultados y logs (los golden tests usan copias chicas en tests/)
+runs/
+
+# Cachés y estado que cambian en cada corrida
+data/cache_*.json
+data/cotizacion_dolar.json
+
+# Generado por tools/fase0_mapa_control.py (7 MB)
+data/mapa_zonas_control.html
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
