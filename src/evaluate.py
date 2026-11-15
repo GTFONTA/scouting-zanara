@@ -95,6 +95,13 @@ def _floor(x: float) -> int:
     return math.floor(x + 1e-9)          # every partial result is rounded down (INT of the Excel)
 
 
+def multifamiliar(zone: dict, s: float, p: dict) -> str:
+    """'Sí' / 'Condicional' / 'No' of the zone for this lot: some zones admit it only above a lot size
+    (productos.multifamiliar_sup_min, e.g. Tigre R4 from 1.000 m2)."""
+    min_area = (p.get("multifamiliar_sup_min") or {}).get(zone["zona"])
+    return "No" if min_area and s < min_area else zone["multifamiliar"]
+
+
 def units(zone: dict, s: float, front: float | None, p: dict) -> dict:
     """Units of each product for one row of normativa_zonas.csv. None = the zone doesn't allow that product.
     Unknown front: surface only (never lose an opportunity; the Excel shows 'sin frente' instead)."""
@@ -113,7 +120,7 @@ def units(zone: dict, s: float, front: float | None, p: dict) -> dict:
                 min(_floor(s / unit_area), _floor(front / unit_width))
         if unit_area:
             out["agrupadas_acceso_comun"] = _floor(s / unit_area)
-        if zone["multifamiliar"] == "Sí":
+        if multifamiliar(zone, s, p) == "Sí":
             potential, net = _f(zone["densidad_neta_potencial"]), _f(zone["densidad_neta"])
             if "N = sup/" in zone["regla_unidades"] and unit_area:          # Rm4: N = sup/150 even multifamiliar
                 out["multifamiliar_unidades"] = _floor(s / unit_area)
@@ -184,8 +191,8 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
     hits, near = [], []
 
     # vía multifamiliar: highest FOT among the nearby zones that allow it (Condicional: at most a near miss)
-    multi = [(x, u) for x, u in evals if x["multifamiliar"] == "Sí" and _fot_multi(x)] or \
-            [(x, u) for x, u in evals if x["multifamiliar"] == "Condicional" and _fot_multi(x)]
+    multi = [(x, u) for x, u in evals if multifamiliar(x, s, p) == "Sí" and _fot_multi(x)] or \
+            [(x, u) for x, u in evals if multifamiliar(x, s, p) == "Condicional" and _fot_multi(x)]
     zm, um = max(multi, key=lambda t: _fot_multi(t[0])) if multi else (None, None)
     if zm:
         out["zona_fot_usado"], out["fot_usado"] = zm["zona"], _fot_multi(zm)
@@ -196,7 +203,7 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
         out["m2_construibles"], out["incidencia_usd_m2"] = round(s * fot), round(price / (s * fot), 1)
     why_multi = "no_admite_multifamiliar"
     if zm:
-        allowed = zm["multifamiliar"] == "Sí"
+        allowed = multifamiliar(zm, s, p) == "Sí"
         m2, inc = s * fot, price / (s * fot)
         if m2 <= c["m2_construibles_min"]:
             why_multi = "m2_insuficientes"
@@ -225,7 +232,7 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
     out["usd_por_unidad_aprobacion"] = round(price / approval) if approval else None
     zu = zl or zm
     out["zona_unidades"], out["relevancia"] = (zu["zona"], zu["relevancia"]) if zu else (None, None)
-    out["requiere_cloaca"] = bool(zm) and (um["requiere_cloaca"] or "requiere_cloaca_para_max" in zm["flags"])
+    out["requiere_cloaca"] = bool(zm) and (um["requiere_cloaca"] or "requiere_cloaca" in zm["flags"])    # _para_max or _multifamiliar
     if front is None and ul and _lots(ul):
         r.setdefault("alertas", []).append("frente_desconocido")
 

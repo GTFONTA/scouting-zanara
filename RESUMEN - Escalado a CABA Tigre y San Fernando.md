@@ -44,7 +44,8 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 - FOT = el mayor entre el actual y el potencial; los premios del Art. 47 de la Ley 8912 van solo como flag.
 - Multifamiliar:
   - **Sí:** C, TC, Tr, R5 a R8, RM y UR.
-  - **Condicional:** R4.
+  - **Sí, con cloaca (Gonzalo, 14/11):** C1 a C4.
+  - **Sí solo en terrenos de más de 1.000 m² (Gonzalo, 14/11):** R4.
   - **No:** R1u, R2, R3, RP, I, E y A.
 - **Sin producto:** barrios cerrados, club de campo, parques y UE.
 - **Delta:** excluido.
@@ -53,8 +54,9 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 **San Fernando**
 - Multifamiliar según la densidad:
   - **Sí, con 300 hab/ha o más:** R1, R2, C1, C2, etc.
-  - **Condicional, entre 150 y 299:** R3, R4, C3.
+  - **Condicional, entre 150 y 299:** DUE.
   - **No, con menos de 150.**
+  - **Revisado por Gonzalo en el código (14/11):** C3 y C3A sí; R3, R3A, R3B y R4 no.
 - Casas agrupadas: no se calculan, porque UrbaSIG no da m² por vivienda.
 
 **CABA**
@@ -70,7 +72,7 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 
 1. ~~**CABA:** plusvalía y referencia del umbral~~ → **decidido por Gonzalo el 14/11/2026:** la plusvalía entra en la incidencia y la referencia es la Ley 6062 por distrito (0,8 / 1,0).
 2. **CABA:** la envolvente estimada (3 m por piso y 65% de la planta) hay que compararla con Ciudad 3D en 3 o 4 casos reales.
-3. **Tigre y San Fernando:** los umbrales quedaron en 350 / 450 (Gonzalo, 14/11). Las zonas C1 a C4 y R4 de Tigre, y R3, R4, C3 y C3A de San Fernando: **Gonzalo revisa en los códigos si admiten multifamiliar**.
+3. ~~**Tigre y San Fernando:** umbrales y zonas dudosas~~ → **decidido por Gonzalo el 14/11/2026:** umbrales 350 / 450; Tigre C1 a C4 sí con cloaca y R4 sí desde 1.000 m²; San Fernando C3 y C3A sí, R3, R3A, R3B y R4 no.
 4. **Volumen:** CABA y Tigre pueden superar lo que Zonaprop tolera por corrida (unas 60 páginas). Si es así, hay que subir los filtros de superficie o hacer primero la Fase C (descarga incremental con presupuesto diario).
 5. **Validación manual:** 10 a 15 avisos reales por municipio, pasados a mano, antes de sacarlos del modo prueba (checklist de la sección 6 del prompt).
 

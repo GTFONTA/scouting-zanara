@@ -10,7 +10,8 @@
 - **Densidad:** la mayor entre la actual y la potencial (hab/ha), con 4 personas por unidad, igual que en San Isidro.
 - **Multifamiliar:**
   - **Sí:** zonas centrales (C1 a C7, TC, Tr), R5 a R8, RM1, RM2 y las UR de Nordelta.
-  - **Condicional:** R4. La observación de la zona dice "en terrenos mayores a 1.000 m² se admite multifamiliar"; un hit ahí sale como casi.
+  - **Sí, con cloaca (Gonzalo, 14/11/2026):** C1, C2a, C2b, C3 y C4a/b/c. El hit lleva el flag `requiere_cloaca_para_max` ("multifamiliar solo con agua y cloaca").
+  - **R4 (Gonzalo, 14/11/2026):** Sí solo en terrenos de más de 1.000 m² (`productos.multifamiliar_sup_min` en `municipio.yaml`); más chicos, no.
   - **No:** R1u, R2, R3, RP, I, E y A (son zonas de "una vivienda cada X m² de lote").
 - **Sin producto:** barrios cerrados (R1a, R1b, R3b), club de campo (CC), parques (PR, PU, PT, PA), usos específicos (UE) y precinto industrial (P). También cualquier zona con FOT 0 en UrbaSIG.
 - **Lotes con frente propio:** parcela mínima (sm) y frente mínimo (lm) de cada zona.
@@ -28,6 +29,6 @@ Incidencia < 350 USD/m² para oportunidad y entre 350 y 450 para casi: más bajo
 
 ## Para validar con Gonzalo
 
-1. Si C1 a C4 y R4 admiten multifamiliar (UrbaSIG da densidad 150 hab/ha, y con agua y cloaca llegaría a 2.000 hab/ha). **Gonzalo lo revisa en el código** (14/11/2026).
+1. ~~Si C1 a C4 y R4 admiten multifamiliar~~ → **decidido por Gonzalo el 14/11/2026:** C1 a C4 sí, con cloaca; R4 sí en terrenos de más de 1.000 m².
 2. Si conviene usar los premios del Art. 47 en vez de dejarlos solo como flag.
 3. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".

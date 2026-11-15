@@ -2,6 +2,7 @@
 recorded Ciudad 3D answers (no network)."""
 
 import copy
+import csv
 import gzip
 import json
 
@@ -69,19 +70,29 @@ def test_tigre_central_zone_is_a_multifamiliar_hit(monkeypatch, tmp_path):
     hit, outside = rows
     assert hit["resultado"] == "oportunidad" and "multifamiliar" in hit["via"]
     assert hit["fot_usado"] == 3.0 and hit["m2_construibles"] == 3600
+    assert hit["requiere_cloaca"] and "requiere_cloaca_para_max" in hit["flags"]    # C1-C4: Gonzalo, 14/11
+    assert "requiere_cloaca_multifamiliar" not in hit["flags"]
     assert outside["motivo_descarte"] == "fuera_del_partido"
 
 
-def test_san_fernando_low_density_is_only_a_near_miss(monkeypatch, tmp_path):
-    harness.offline(monkeypatch, tmp_path)
-    from src import main
-    cfg = load_config("san_fernando")
-    cfg["productos"]["catastro"]["max_consultas_por_corrida"] = 0
-    lat, lon = _point_in_zone("san_fernando", "R3A")
-    rows, _ = main.process({"zonaprop": _zonaprop_items([(lat, lon, 1500, 300000)])}, cfg, [], [])
-    r = rows[0]
-    if r["zona_fot_usado"] == "R3A":                 # a denser zone within 30 m would win (by design)
-        assert r["resultado"] == "casi" and r["via"] == "multifamiliar condicional"
+def _normativa(slug):
+    path = harness.GOLDEN.parent.parent / "municipios" / slug / "normativa_zonas.csv"
+    with open(path, encoding="utf-8") as fh:
+        return {row["zona"]: row for row in csv.DictReader(fh)}
+
+
+def test_multifamiliar_decisions_of_gonzalo():
+    """Zones checked by Gonzalo in each code (14/11/2026)."""
+    from src.evaluate import multifamiliar, units
+    tigre, sf = _normativa("tigre"), _normativa("san_fernando")
+    p = load_config("tigre")["productos"]
+    assert all("requiere_cloaca_multifamiliar" in tigre[z]["flags"] for z in ("C1", "C2a", "C2b", "C3", "C4a", "C4c"))
+    assert "requiere_cloaca" not in tigre["C5"]["flags"]
+    assert multifamiliar(tigre["R4"], 999, p) == "No" and multifamiliar(tigre["R4"], 1000, p) == "Sí"
+    assert units(tigre["R4"], 800, None, p)["multifamiliar_unidades"] is None
+    assert units(tigre["R4"], 2000, None, p)["multifamiliar_unidades"] == 7          # 140 hab/ha x 0,2 ha / 4
+    assert {sf[z]["multifamiliar"] for z in ("C3", "C3A")} == {"Sí"}
+    assert {sf[z]["multifamiliar"] for z in ("R3", "R3A", "R3B", "R4")} == {"No"}
 
 
 # ---------------------------------------------------------------- CABA (recorded answers of 14/11/2026)

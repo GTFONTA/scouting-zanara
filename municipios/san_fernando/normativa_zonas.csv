@@ -6,8 +6,8 @@ C1,Zona Comercial (Centro Politico - Administrativo O Comercial),Alta,3,,0.6,,S�
 C2,Zona Comercial Local,Alta,3,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,900,,,,UrbaSIG 03-2026 96-ord-3603-1991,
 C2A,Zona Comercial Local,Alta,3,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,300,,,,UrbaSIG 03-2026 96-ord-3603-1991,
 C2B,Zona Comercial Local,Alta,1.2,,0.6,"9,5 M",Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,500,,,,UrbaSIG 03-2026 96-ord-3603-1991,
-C3,Zona Comercial Local,Media,1.2,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,200,,,,UrbaSIG 03-2026 96-ord-3603-1991,
-C3A,Zona Comercial Mixta,Media,1.2,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,200,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,"FOT: 1,2 - (FRENTISTAS A AV. AVELLANEDA 1,8)"
+C3,Zona Comercial Local,Alta,1.2,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,15,375,200,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+C3A,Zona Comercial Mixta,Alta,1.2,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,15,375,200,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,"FOT: 1,2 - (FRENTISTAS A AV. AVELLANEDA 1,8)"
 C4Ue,Zona Comercial Especial,Alta,2,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,,,500,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,"FOT: 1,2 (COMERCIO) - 2 (VIVENDA MULTIFAMILIAR) - 1 (VIVIENDA UNIFAMILIAR)"
 DDP,Distrito De Desarrollo Programado,Alta,1.5,,0.4,"11,20 M",Sí,Densidad neta de la zona (multifamiliar),,,,no,,,600,,,,UrbaSIG 03-2026 96-ord-3603-1991,
 DI,Distrito Industrial,Media,1.2,,0.6,12 M,No,Unifamiliar por parcela,,,,no,40,2000,130,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991 96-ord-13017-2021 96-ord-13536-2023 96-reso-2022-833-gdeba-mggp 96-reso-2023-877-gdeba-mggp,"ORD. 13536/23 PROHÍBASE LA RADICACIÓN DE INDUSTRIAS NO AMIGABLES CON EL MEDIO AMBIENTE Y DE ESTABLECIMIENTOS QUE REALICEN TRATAMIENTOS DE RESIDUOS PATÓGENOS, MATADEROS, CURTIEMBRES, PROD. DE ADOBOS Y TEÑIDOS DE PIELES, FAB. DE ASBESTOS"
@@ -25,10 +25,10 @@ R1,Zona Residencial Alta Densidad,Alta,2.4,,0.6,,Sí,Densidad neta de la zona (m
 R1U0,Zona Residencial Alta Densidad,Alta,2.4,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,25,750,900,,,,UrbaSIG 03-2026 96-ord-3603-1991,
 R2,Zona Residencial Media Densidad,Alta,1.8,,0.6,,Sí,Densidad neta de la zona (multifamiliar),,,,no,20,600,600,,,,UrbaSIG 03-2026 96-ord-3603-1991,
 R2 AU1,Zona Residencial Media Densidad,Alta,1.8,,0.6,"11,20 M",Sí,Densidad neta de la zona (multifamiliar),,,,no,20,600,600,,,ver_observacion_zona,UrbaSIG 03-2026 96-ord-3603-1991,ORD 1424/81 PLANO 96-6-96
-R3,Zona Residencial Baja Densidad,Media,1,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
-R3A,Zona Residencial Baja Densidad,Media,1,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,170,,,,UrbaSIG 03-2026 96-ord-3603-1991,
-R3B,Zona Residencial Baja Densidad,Media,1,,0.6,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,375,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
-R4,Zona Residencial Barrio - Parque,Media,1,,0.5,,Condicional,Densidad neta de la zona (multifamiliar),,,,no,15,450,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R3,Zona Residencial Baja Densidad,Media,1,,0.6,,No,Unifamiliar por parcela,,,,no,15,375,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R3A,Zona Residencial Baja Densidad,Media,1,,0.6,,No,Unifamiliar por parcela,,,,no,15,375,170,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R3B,Zona Residencial Baja Densidad,Media,1,,0.6,,No,Unifamiliar por parcela,,,,no,15,375,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
+R4,Zona Residencial Barrio - Parque,Media,1,,0.5,,No,Unifamiliar por parcela,,,,no,15,450,250,,,,UrbaSIG 03-2026 96-ord-3603-1991,
 R4Ue,Zona Residencial Especial,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,FRENTISTAS DE AV. LIBERTADOR ENTRE VICTORIANO MONTES Y PASTEUR
 RC2,Zona De Recuperacion,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,"ZONA INUNDABLE Y LIBRE DE OCUPACION, ESTARIA SUJETA A LA RECUPERACION MEDIANTE OBRAS DE INFRAESTRUCTURA QUE ASEGUREN SU SANEAMIENTO. PARA SER AFECTADA A USOS DEL SUELO, SE DEBERA PRESENTAR EL ESTUDIO HIDRAULICO."
 RC2RE2,Zona De Recuperacion,Nula,,,,,No,Sin vivienda como producto,,,,no,,,,,,,UrbaSIG 03-2026 96-ord-3603-1991,"ZONA INUNDABLE Y LIBRE DE OCUPACION, ESTARIA SUJETA A LA RECUPERACION MEDIANTE OBRAS DE INFRAESTRUCTURA QUE ASEGUREN SU SANEAMIENTO. PARA SER AFECTADA A USOS DEL SUELO, SE DEBERA PRESENTAR EL ESTUDIO HIDRAULICO."

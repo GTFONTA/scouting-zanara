@@ -9,7 +9,8 @@
 - **FOT y densidad:** los de UrbaSIG (en San Fernando casi no hay valores potenciales).
 - **Multifamiliar según la densidad:**
   - **Sí, con 300 hab/ha o más:** R1, R2, C1, C2, C2A, C2B, C4Ue, DDP, DRC y RR.
-  - **Condicional, entre 150 y 299 hab/ha:** R3, R3A, R3B, R4, C3 y C3A. Un hit ahí sale como casi.
+  - **Sí (Gonzalo, 14/11/2026, revisado en el código):** C3 y C3A.
+  - **No (Gonzalo, 14/11/2026, revisado en el código):** R3, R3A, R3B y R4. Siguen dando lotes con frente propio.
   - **No:** I2, I2A, DI, BPN y RRE.
   - **DUE 1a / 1b** (urbanización especial de vivienda social, parcelas de 80 a 130 m²): Condicional.
 - **Sin producto:** I1, IE U4, los UE, equipamiento comunitario, cesiones, zonas de recuperación inundables, canal, islas y R4Ue (frentistas de Libertador: UrbaSIG no trae indicadores).
@@ -23,5 +24,5 @@ Incidencia < 350 USD/m² para oportunidad y entre 350 y 450 para casi. El resto 
 
 ## Para validar con Gonzalo
 
-1. Si R3, R3A, R3B, R4, C3 y C3A admiten multifamiliar (hoy son Condicional). **Gonzalo lo revisa en el código** (14/11/2026).
+1. ~~Si R3, R3A, R3B, R4, C3 y C3A admiten multifamiliar~~ → **decidido por Gonzalo el 14/11/2026:** C3 y C3A sí; R3, R3A, R3B y R4 no.
 2. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".

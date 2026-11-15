@@ -9,6 +9,7 @@ Sources (public, one download each; re-run to refresh):
 Usage:
     python tools/municipio_pba.py tigre
     python tools/municipio_pba.py san_fernando
+    python tools/municipio_pba.py tigre --solo-normativa    # only normativa_zonas.csv, from the saved raw layer
 Output (municipios/<slug>/):
     fuentes/urbasig_zonificacion.geojson   raw layer, as downloaded
     zonas.geojson                          one feature per zone polygon: {zona}
@@ -52,16 +53,19 @@ PARTIDOS = {
     "tigre": {
         "codigo": "057", "osm": 2411762,
         # designation prefix -> multifamiliar (first match wins). Central zones admit it although UrbaSIG also
-        # gives um2 for them; R4 only on lots > 1.000 m2 (observation of the zone).
+        # gives um2 for them. Gonzalo, 14/11/2026: C1-C4 only with water and sewers (flag); R4 only on lots
+        # > 1.000 m2 (productos.multifamiliar_sup_min in municipio.yaml).
         "multi": [("TC", "Sí"), ("Tr", "Sí"), ("C", "Sí"), ("UR", "Sí"), ("RM", "Sí"), ("R5", "Sí"), ("R6", "Sí"),
-                  ("R7", "Sí"), ("R8", "Sí"), ("R4", "Condicional"), ("R1u", "No"), ("R2", "No"), ("R3", "No"),
+                  ("R7", "Sí"), ("R8", "Sí"), ("R4", "Sí"), ("R1u", "No"), ("R2", "No"), ("R3", "No"),
                   ("RP", "No"), ("I", "No"), ("E", "No"), ("A", "No")],
         # never housing as a product: barrios cerrados and clubes de campo already subdivided, parks, special uses
+        "cloaca": ["C1", "C2", "C3", "C4"],      # multifamiliar needs water and sewers (observation of the zone)
         "sin_vivienda": ["CC", "R1a", "R1b", "R3b", "PR", "PU", "PT", "PA", "UE", "P"],
     },
     "san_fernando": {
         "codigo": "096", "osm": 2443418,
-        "multi": [("DUE", "Condicional"), ("BPN", "No"), ("RRE", "No")],
+        # Gonzalo, 14/11/2026 (checked in the code): C3/C3A admit multifamiliar, R3/R3A/R3B/R4 don't
+        "multi": [("C3", "Sí"), ("R3", "No"), ("R4", "No"), ("DUE", "Condicional"), ("BPN", "No"), ("RRE", "No")],
         "sin_vivienda": ["I1", "IE", "UE", "ESECS", "EVUP", "RC2", "Z C", "ACCESO", "AREA DE ISLAS", "R4Ue"],
     },
 }
@@ -123,6 +127,8 @@ def zone_row(name: str, props: list[dict], conf: dict) -> dict:
         flags.append("premio_ley_8912")
     if housing and obs:
         flags.append("ver_observacion_zona")
+    if housing and multi == "Sí" and _starts(name, conf.get("cloaca", [])):
+        flags.append("requiere_cloaca_multifamiliar")
     if not housing:
         rule = NO_HOUSING
     elif multi in ("Sí", "Condicional"):
@@ -150,12 +156,16 @@ def zone_row(name: str, props: list[dict], conf: dict) -> dict:
     }
 
 
-def main(slug: str) -> None:
+def main(slug: str, only_normativa: bool = False) -> None:
     conf = PARTIDOS[slug]
     out = ROOT / "municipios" / slug
     (out / "fuentes").mkdir(parents=True, exist_ok=True)
-    raw = urbasig(conf["codigo"])
-    (out / "fuentes" / "urbasig_zonificacion.geojson").write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+    raw_path = out / "fuentes" / "urbasig_zonificacion.geojson"
+    if only_normativa:
+        raw = json.loads(raw_path.read_text(encoding="utf-8"))
+    else:
+        raw = urbasig(conf["codigo"])
+        raw_path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
     feats, by_name = [], {}
     for f in raw["features"]:
         name = (f["properties"].get("designacio") or "").strip()
@@ -170,6 +180,9 @@ def main(slug: str) -> None:
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
         w.writeheader()
         w.writerows(rows)
+    if only_normativa:
+        print(f"{slug}: {len(rows)} zonas -> {out / 'normativa_zonas.csv'}")
+        return
     zoned = unary_union([shape(f["geometry"]) for f in feats]).buffer(0.003)        # ~300 m: continental, zoned area
 
     rels = overpass(f"""[out:json][timeout:240];
@@ -201,4 +214,4 @@ out geom;""")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], "--solo-normativa" in sys.argv[2:])

@@ -73,7 +73,7 @@ def flags(r: dict, normativa: dict, cfg: dict) -> list[str]:
     if TWO_FRONTS.search(f"{r.get('titulo') or ''} {r.get('descripcion') or ''}"):
         out.append("dos_frentes")
     for z in zones:
-        out += [x for x in z["flags"].split(";") if x and x != "pasivo_ambiental"]
+        out += [x for x in z["flags"].split(";") if x and x not in ("pasivo_ambiental", "requiere_cloaca_multifamiliar")]
     if r.get("requiere_cloaca"):
         out.append("requiere_cloaca_para_max")
     arts = {**ARTICLES, **(f.get("articulos") or {})}          # each municipio cites its own code
