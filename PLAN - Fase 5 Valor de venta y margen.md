@@ -20,9 +20,9 @@ Mientras dure la fase, **la regla vigente no cambia**: los umbrales de incidenci
 Costos dados por Gonzalo el 14/11/2026. Van a `config.yaml`, nunca en el código.
 
 **Multifamiliar**
-- Costo de obra: 1.300 USD/m² directo + 500 USD/m² de honorarios, comisiones e impuestos = **1.800 USD/m²**.
+- Costo de obra: 1.300 USD/m² directo + 500 USD/m² de honorarios, comisiones e impuestos = **1.800 USD por m² vendible** (Gonzalo, 14/11/2026). El valor de venta también es por m² vendible, así que el margen por m² se calcula directo.
 - Margen por m² = valor de venta de la zona − 1.800 − incidencia.
-- Margen total = margen por m² × m² construibles.
+- Margen total = margen por m² × m² vendibles. Se toman como vendibles los m² construibles por FOT (superficie × FOT), que es lo que el código computa.
 - Margen sobre costo = margen por m² ÷ (1.800 + incidencia).
 
 **Loteo de barrio cerrado**
@@ -83,11 +83,11 @@ Cada paso se valida con Gonzalo antes de pasar al siguiente. Los golden tests de
 
 - **Son precios de publicación, no de cierre.** Para comparar zonas sirven igual. Para el margen absoluto se puede aplicar un descuento de negociación, configurable.
 - **Zonas con pocos avisos a estrenar** van a caer en la mediana de la localidad, que es gruesa.
-- **m² vendibles ≠ m² construibles.** Hoy el cálculo usa superficie × FOT. Ver dudas.
+- **m² vendibles:** se asume que son los m² por FOT. Si en la práctica se vende más o menos que eso, se agrega un factor en `config.yaml`.
 
 ## 7. Dudas para Gonzalo
 
-1. **Multifamiliar:** los 1.800 USD/m², ¿son por m² vendible o por m² construido total (con palieres, cocheras y espacios comunes)? De eso depende si hay que aplicar una relación vendible/construido.
+1. ~~**Multifamiliar:** los 1.800 USD/m², ¿por m² vendible o construido?~~ → **por m² vendible** (Gonzalo, 14/11/2026).
 2. **Casas (housing):** falta el costo de obra por m² y los honorarios.
 3. **Descuento de negociación** sobre el precio publicado: ¿aplicamos alguno (por ejemplo, 5–10%) o comparamos contra publicación?
 4. **Margen mínimo** que te interesa (sobre costo, en %), para cuando el margen pase a ser regla.
