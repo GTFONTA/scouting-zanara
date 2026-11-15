@@ -31,7 +31,9 @@ Costos dados por Gonzalo el 14/11/2026. Van a `config.yaml`, nunca en el código
 - Margen por m² bruto = ingreso − 30 − precio de la tierra por m².
 - Margen sobre costo = margen ÷ (30 + precio de la tierra por m²).
 
-**Casas (housing):** falta el costo de obra. Ver dudas.
+**Casas (housing)**
+- Costo de obra: el mismo que multifamiliar, **1.800 USD por m² vendible** (Gonzalo, 14/11/2026: menos escala, pero casi sin áreas comunes).
+- Mismas fórmulas que multifamiliar, con el valor de venta de casas de la zona.
 
 ## 3. De dónde sale el valor de venta
 
@@ -88,7 +90,7 @@ Cada paso se valida con Gonzalo antes de pasar al siguiente. Los golden tests de
 ## 7. Dudas para Gonzalo
 
 1. ~~**Multifamiliar:** los 1.800 USD/m², ¿por m² vendible o construido?~~ → **por m² vendible** (Gonzalo, 14/11/2026).
-2. **Casas (housing):** falta el costo de obra por m² y los honorarios.
+2. ~~**Casas (housing):** costo de obra~~ → **1.800 USD/m², igual que multifamiliar** (Gonzalo, 14/11/2026).
 3. **Descuento de negociación** sobre el precio publicado: ¿aplicamos alguno (por ejemplo, 5–10%) o comparamos contra publicación?
 4. **Margen mínimo** que te interesa (sobre costo, en %), para cuando el margen pase a ser regla.
 5. **Loteo abierto** (lotes con frente a calle pública, sin infraestructura interna): ¿tiene un costo de desarrollo propio o es despreciable?
