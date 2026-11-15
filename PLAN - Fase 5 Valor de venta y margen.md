@@ -2,7 +2,7 @@
 
 Pedido de Gonzalo (14/11/2026): las mejores oportunidades no son las de menor incidencia, sino las que dejan más diferencia entre el costo por m² y el precio de venta. Hay que mapear el valor de venta de cada zona y cruzarlo con los avisos.
 
-**Estado:** plan para revisar. No se toca código hasta que Gonzalo lo apruebe, y no se empieza antes de revisar la corrida del lunes 16/11 y de pasar `dev` a `main`.
+**Estado:** **aprobado por Gonzalo el 15/11/2026.** El piloto (paso 1) baja departamentos de Mercado Libre, así que arranca después de revisar la corrida del lunes 16/11 y de pasar `dev` a `main`, y nunca el mismo día que una corrida semanal.
 
 ## 1. Qué cambia para Gonzalo
 
