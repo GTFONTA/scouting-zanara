@@ -69,10 +69,13 @@ def test_tigre_central_zone_is_a_multifamiliar_hit(monkeypatch, tmp_path):
                            cfg, [], [])
     hit, outside = rows
     assert hit["resultado"] == "oportunidad" and "multifamiliar" in hit["via"]
-    assert hit["fot_usado"] == 3.0 and hit["m2_construibles"] == 3600
+    assert hit["fot_usado"] == 4.5 and hit["m2_construibles"] == 5400      # premio Art. 47: 1.200 >= 2 x 300 m2
+    assert "premio_ley_8912_aplicado" in hit["flags"]
     assert hit["requiere_cloaca"] and "requiere_cloaca_para_max" in hit["flags"]    # C1-C4: Gonzalo, 14/11
     assert "requiere_cloaca_multifamiliar" not in hit["flags"]
     assert outside["motivo_descarte"] == "fuera_del_partido"
+    small = main.process({"zonaprop": _zonaprop_items([(lat, lon, 500, 300000)])}, cfg, [], [])[0][0]
+    assert small["fot_usado"] == 3.0 and "premio_ley_8912_aplicado" not in small["flags"]   # 500 < 2 parcelas
 
 
 def _normativa(slug):

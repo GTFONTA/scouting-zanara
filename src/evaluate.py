@@ -145,11 +145,23 @@ def best_product(u: dict) -> str:
     return ""
 
 
-def _fot_multi(zone: dict) -> float | None:
+def premio_factible(zone: dict, s: float, front: float | None, p: dict) -> bool:
+    """Premios of Art. 47 Ley 8912 (fot_max of the zone, flag premio_ley_8912) count when the lot is big enough to
+    earn them (wide lot, free perimeter, setbacks): surface >= N minimum lots and, if the front is known, front >=
+    N minimum fronts (productos.premio_ley_8912.parcelas_min; without that key premios never count)."""
+    n = (p.get("premio_ley_8912") or {}).get("parcelas_min")
+    if not n or "premio_ley_8912" not in zone["flags"] or not _f(zone["fot_max"]):
+        return False
+    lot_area, lot_width = _f(zone["subdiv_sup_min"]), _f(zone["subdiv_ancho_min"])
+    return (not lot_area or s >= n * lot_area) and (front is None or not lot_width or front >= n * lot_width)
+
+
+def _fot_multi(zone: dict, s: float = 0, front: float | None = None, p: dict | None = None) -> float | None:
     """FOT for multifamiliar. Where the maximum only needs sewers (Rma5, Cma4: flag requiere_cloaca_para_max) the
-    maximum is used, like the potential density, and the listing carries that flag."""
-    key = "fot_max" if "requiere_cloaca_para_max" in zone["flags"] else "fot"
-    return _f(zone[key]) or _f(zone["fot"])
+    maximum is used, like the potential density, and the listing carries that flag. Same with feasible premios of
+    the Ley 8912 (Tigre)."""
+    use_max = "requiere_cloaca_para_max" in zone["flags"] or premio_factible(zone, s, front, p or {})
+    return _f(zone["fot_max" if use_max else "fot"]) or _f(zone["fot"])
 
 
 def _lots(u: dict) -> int:
@@ -191,11 +203,13 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
     hits, near = [], []
 
     # vía multifamiliar: highest FOT among the nearby zones that allow it (Condicional: at most a near miss)
-    multi = [(x, u) for x, u in evals if multifamiliar(x, s, p) == "Sí" and _fot_multi(x)] or \
-            [(x, u) for x, u in evals if multifamiliar(x, s, p) == "Condicional" and _fot_multi(x)]
-    zm, um = max(multi, key=lambda t: _fot_multi(t[0])) if multi else (None, None)
+    multi = [(x, u) for x, u in evals if multifamiliar(x, s, p) == "Sí" and _fot_multi(x, s, front, p)] or \
+            [(x, u) for x, u in evals if multifamiliar(x, s, p) == "Condicional" and _fot_multi(x, s, front, p)]
+    zm, um = max(multi, key=lambda t: _fot_multi(t[0], s, front, p)) if multi else (None, None)
     if zm:
-        out["zona_fot_usado"], out["fot_usado"] = zm["zona"], _fot_multi(zm)
+        out["zona_fot_usado"], out["fot_usado"] = zm["zona"], _fot_multi(zm, s, front, p)
+        if premio_factible(zm, s, front, p):
+            r.setdefault("alertas", []).append("premio_ley_8912_aplicado")
     elif normativa.get(r.get("zona_fot_usado") or ""):         # no multifamiliar nearby: FOT only as a reference
         out["zona_fot_usado"] = normativa[r["zona_fot_usado"]][0]["zona"]
     fot = out.get("fot_usado") or r.get("fot_usado")

@@ -6,7 +6,8 @@
 
 ## Cómo se arma cada zona (decidido el 14/11/2026, sin Gonzalo)
 
-- **FOT:** el mayor entre el actual y el potencial de UrbaSIG. Los premios del Art. 47 de la Ley 8912 (por ejemplo, C1 llega a FOT 3,6) **no** se usan en el cálculo: aparecen como el flag `premio_ley_8912`, con el valor en `notas`.
+- **FOT:** el mayor entre el actual y el potencial de UrbaSIG.
+- **Premios del Art. 47 de la Ley 8912 (Gonzalo, 14/11/2026: "usalos si es factible aplicar el premio"):** el FOT con premios de UrbaSIG (por ejemplo, C1 pasa de 2,4 a 3,6 y C2a de 3 a 4,5) se usa para el multifamiliar cuando el lote tiene al menos 2 parcelas mínimas de la zona y, si se conoce el frente, al menos 2 frentes mínimos. Así le da para ancho de parcela, perímetro libre y retiros (`productos.premio_ley_8912.parcelas_min` en `municipio.yaml`). El hit lleva el flag `premio_ley_8912_aplicado` para verificarlo. Con lotes más chicos se usa el FOT sin premio. La densidad sigue sin premio: solo cambia la cantidad de departamentos informada, no el veredicto.
 - **Densidad:** la mayor entre la actual y la potencial (hab/ha), con 4 personas por unidad, igual que en San Isidro.
 - **Multifamiliar:**
   - **Sí:** zonas centrales (C1 a C7, TC, Tr), R5 a R8, RM1, RM2 y las UR de Nordelta.
@@ -30,5 +31,5 @@ Incidencia < 350 USD/m² para oportunidad y entre 350 y 450 para casi: más bajo
 ## Para validar con Gonzalo
 
 1. ~~Si C1 a C4 y R4 admiten multifamiliar~~ → **decidido por Gonzalo el 14/11/2026:** C1 a C4 sí, con cloaca; R4 sí en terrenos de más de 1.000 m².
-2. Si conviene usar los premios del Art. 47 en vez de dejarlos solo como flag.
+2. ~~Premios del Art. 47~~ → **decidido por Gonzalo el 14/11/2026:** se usan cuando es factible aplicarlos (lote de 2 parcelas mínimas o más).
 3. Pasar 10 a 15 avisos reales a mano antes de sacar la marca "EN PRUEBA".

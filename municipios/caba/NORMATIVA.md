@@ -42,8 +42,8 @@ Terrenos desde 200 m², casas y galpones desde 300 m², edificios sin filtro. **
 
 - La plusvalía entra en la incidencia.
 - La referencia es la incidencia de la Ley 6062 del distrito: oportunidad hasta 0,8 y casi hasta 1,0.
+- Mínimo de 1.000 m² construibles (de piso) para que un aviso pueda ser oportunidad; gran predio desde 1.500 m².
 
 ## Para validar con Gonzalo
 
 1. La envolvente estimada (3 m por piso, 65% de la planta): comparar 3 o 4 casos con lo que muestra Ciudad 3D.
-2. El mínimo de 1.000 m² construibles y el gran predio desde 1.500 m².

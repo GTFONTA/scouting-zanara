@@ -41,7 +41,7 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 - **Mismos productos que en San Isidro** (multifamiliar, lotes, agrupadas, loteo con calle), pero con los indicadores de cada código. Las reglas de cada zona están en `municipios/<slug>/normativa_zonas.csv` y la explicación en `NORMATIVA.md`.
 
 **Tigre**
-- FOT = el mayor entre el actual y el potencial; los premios del Art. 47 de la Ley 8912 van solo como flag.
+- FOT = el mayor entre el actual y el potencial. Los premios del Art. 47 de la Ley 8912 se usan cuando el lote tiene 2 parcelas mínimas o más (Gonzalo, 14/11), con flag para verificar.
 - Multifamiliar:
   - **Sí:** C, TC, Tr, R5 a R8, RM y UR.
   - **Sí, con cloaca (Gonzalo, 14/11):** C1 a C4.
@@ -64,7 +64,7 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
   - **FOT:** sin plusvalía.
   - **Envolvente:** altura del plano límite ÷ 3 m × 65% de la planta, pagando la plusvalía de los m² que superan el FOT entre medianeras.
 - **Plusvalía:** la de la API. Cuando la API da 0 por encima del FOT, se aplica la fórmula de la Ley 6062 sin reducciones, con flag.
-- **Umbral:** oportunidad si la incidencia con plusvalía ≤ 0,8 × la incidencia oficial de la Ley 6062 del distrito; casi hasta 1,0; además, más de 1.000 m² construibles. Gran predio desde 1.500 m².
+- **Umbral:** oportunidad si la incidencia con plusvalía ≤ 0,8 × la incidencia oficial de la Ley 6062 del distrito; casi hasta 1,0; además, más de 1.000 m² construibles. Gran predio desde 1.500 m² (los dos valores confirmados por Gonzalo el 14/11).
 - **Catalogado integral o estructural:** se descarta. **Cautelar:** como mucho sale como casi.
 - **Búsquedas:** terrenos desde 200 m², casas y galpones desde 300 m², edificios sin filtro.
 
