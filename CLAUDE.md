@@ -93,3 +93,6 @@ runs/<fecha>/      # crudo bajado + resultado.csv de cada corrida (excluido de g
 - Municipios nuevos en modo prueba (`municipio.en_prueba: true`): mail con asunto "[EN PRUEBA]" solo a `mail.para` (o la primera dirección de `MAIL_TO`), sin Sheet propia (`sheet.id` vacío = `--sin-sheet`).
 - Volumen de búsquedas: `tools/medir_busquedas.py <slug>` abre solo la primera página de cada búsqueda. Nunca antes de una corrida semanal.
 - Tests: `python -m pytest` (golden tests de San Isidro con crudos del 09/11 y 02/11, scraper, municipios). Todo cambio tiene que pasarlos; si un cambio de regla pedido por Gonzalo cambia resultados, `pytest tests/test_golden.py --regenerar` y revisar el diff.
+
+## Fase 5 (en preparación, `margen.activo: false`)
+Plan aprobado por Gonzalo el 15/11/2026: `PLAN - Fase 5 Valor de venta y margen.md`. Costos en `config.yaml` (`margen:`): 1.800 USD por m² vendible para multifamiliar y casas, 30 USD por m² bruto para loteo de barrio cerrado. `src/registro.py` (registro de comparables en `data/registro_comparables*.csv`, local), `src/margin.py` (valor de la zona y margen), `tools/backtest_fase5.py` (offline, sobre corridas guardadas). Con `activo: false` la corrida no cambia; la regla vigente sigue siendo la incidencia hasta que Gonzalo vea el backtest.

@@ -95,3 +95,18 @@ Cada paso se valida con Gonzalo antes de pasar al siguiente. Los golden tests de
 4. **Margen mínimo** que te interesa (sobre costo, en %), para cuando el margen pase a ser regla.
 5. **Loteo abierto** (lotes con frente a calle pública, sin infraestructura interna): ¿tiene un costo de desarrollo propio o es despreciable?
 6. **Costo financiero y plazo:** ¿los dejamos fuera? Lo propongo así para empezar, porque es un filtro de primera mirada.
+
+## 8. Avance
+
+**15/11/2026, adelantado sin consultar portales (rama `dev`, sin conectar a la corrida):**
+- **Configuración:** bloque `margen:` en `config.yaml` con los costos de Gonzalo, en `activo: false`. La corrida no cambia: los golden tests dan igual.
+- **`src/registro.py`:** registro acumulativo de comparables (departamentos, casas, lotes en barrio cerrado), un CSV por municipio en disco local.
+- **`src/margin.py`:** valor de la zona (500 m → localidad → partido) y margen de cada vía. Se queda con la mejor.
+- **`tools/backtest_fase5.py`:** arma un registro semilla con los crudos de las corridas guardadas y compara el orden por incidencia con el orden por margen.
+- **Tests:** `tests/test_fase5.py`, 6 tests nuevos (29 en total).
+
+**Primer backtest (7 corridas de San Isidro, 28/09 a 09/11):**
+- **Registro semilla:** 2.379 casas, 124 lotes en barrio cerrado y 0 departamentos (las búsquedas actuales no los bajan).
+- **Casas:** USD/m² cubierto por localidad entre 1.400 (Villa Adelina) y 2.230 (Acassuso). Son casas usadas en lotes grandes, no casas nuevas, así que el valor queda bajo: con 1.800 de obra, el margen de casas da negativo en la mayoría (mediana −13%). Hace falta sumar casas a estrenar como comparables.
+- **Lotes en barrio cerrado:** 660 a 1.065 USD/m² de lote (Santa Rita, Los Cardos, Sucre Village, Las Lomas). En San Isidro hay pocos predios de 5.000 m² o más, así que casi no aplica: es más para Tigre.
+- **Multifamiliar:** sin margen hasta tener departamentos a estrenar (paso 1, piloto con Mercado Libre después del 16/11).

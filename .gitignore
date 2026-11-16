@@ -21,3 +21,4 @@ __pycache__/
 
 # Mapas de control (se regeneran con tools/mapa_municipio.py)
 municipios/*/Mapa de control*.html
+data/registro_comparables*.csv

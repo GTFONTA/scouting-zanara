@@ -139,6 +139,30 @@ portales:
     # No se intenta sortearlo.
     habilitado: false
 
+margen:
+  # Fase 5 (plan aprobado por Gonzalo el 15/11/2026): valor de venta de la zona y margen de cada hit.
+  # activo: false = la corrida no cambia en nada (regla de la Fase 4). El margen entra primero como dato y orden.
+  activo: false
+  costo_obra_usd_m2:               # por m² vendible: 1.300 directo + 500 honorarios, comisiones, impuestos (Gonzalo, 14/11)
+    multifamiliar: 1800
+    casas: 1800                    # casi lo mismo: menos escala, pero sin áreas comunes (Gonzalo, 14/11)
+  costo_loteo_bc_usd_m2_bruto: 30  # loteo de barrio cerrado: 25 + 5 de honorarios, etc., por m² de tierra bruta
+  # parte vendible del loteo = 1 - productos.pct_calle
+  descuento_negociacion: 0.0       # sobre el precio publicado de los comparables (duda abierta para Gonzalo)
+  registro: data/registro_comparables{sufijo}.csv   # {sufijo} = "" en San Isidro, "_<slug>" en los demás
+  radio_m: 500                     # comparables alrededor del aviso
+  meses: 12                        # vistos por última vez hace menos de esto
+  avisos_min: 5                    # por escalón (500 m, localidad, partido)
+  solo_a_estrenar: [departamento]  # lo que ZANARA vendería; casas: todas por ahora (hay pocas nuevas)
+  comparables:                     # qué entra al registro y con qué m² (rango plausible de cada producto)
+    departamento: {tipologias: [departamento, departamentos], m2_min: 25, m2_max: 300, usd_m2_min: 800, usd_m2_max: 10000}
+    casa: {tipologias: [casa], m2_min: 50, m2_max: 800, usd_m2_min: 400, usd_m2_max: 8000}
+    lote_barrio_cerrado: {tipologias: [terreno], m2_min: 250, m2_max: 5000, usd_m2_min: 20, usd_m2_max: 2000}
+  texto_a_estrenar: "a estrenar|en pozo|preventa|pre-venta|en construcci[oó]n|estrenar"
+  texto_barrio_cerrado: "barrio cerrado|barrio privado|country|club de campo|barrio náutico"
+  # Búsquedas de comparables (piloto, SIN PROBAR: primera consulta después de la corrida del 16/11, nunca antes)
+  busquedas_mercadolibre: []
+
 sheet:
   # ID de la Google Sheet (lo que va entre /d/ y /edit en el link). Compartida con la service account como Editor.
   id: "1nBv5gpEf75YmCbLUoGDCpVZ4XvNYbaAnXoEuAfzGA9w"
