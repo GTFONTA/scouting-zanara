@@ -139,6 +139,17 @@ portales:
     # No se intenta sortearlo.
     habilitado: false
 
+incremental:
+  # Fase C (Gonzalo, 16/11/2026): para municipios que no entran en una corrida (CABA: ~250 páginas de Zonaprop).
+  # Los avisos quedan en un stock en disco; cada corrida gasta como mucho paginas_por_corrida: primero las
+  # novedades (orden "más recientes") y después sigue el barrido por tramos de precio donde quedó. Al terminar
+  # un barrido, los avisos que no aparecieron se dan de baja. San Isidro: false (descarga completa).
+  activo: false
+  paginas_por_corrida: 45          # Zonaprop tolera ~60 por corrida; el 16/11 San Isidro hizo 55 con dos 403
+  novedades_max_paginas: 3         # por búsqueda; corta antes si una página no trae nada nuevo
+  sufijo_recientes: "-orden-publicado-descendente"   # SIN PROBAR: verificar en la primera corrida de CABA
+  estado: data/incremental_zonaprop{sufijo}.json.gz
+
 margen:
   # Fase 5 (plan aprobado por Gonzalo el 15/11/2026): valor de venta de la zona y margen de cada hit.
   # activo: false = la corrida no cambia en nada (regla de la Fase 4). El margen entra primero como dato y orden.

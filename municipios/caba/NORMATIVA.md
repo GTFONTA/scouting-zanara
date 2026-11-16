@@ -36,7 +36,23 @@ Todo queda en caché en `data/cache_caba.json`: una consulta por parcela, nunca 
 
 ## Búsquedas
 
-Terrenos desde 200 m², casas y galpones desde 300 m², edificios sin filtro. **Pendiente:** medir el volumen después del 16/11. CABA tiene muchas más páginas que San Isidro y, sin la descarga incremental (Fase C), puede no entrar en el presupuesto semanal de Zonaprop.
+Terrenos desde 200 m², casas y galpones desde 300 m², edificios sin filtro.
+
+**Volumen medido el 16/11/2026:**
+
+| Portal | Búsqueda | Avisos | Páginas |
+|---|---|---|---|
+| Zonaprop | terrenos | 3.999 | 134 |
+| Zonaprop | casas | 2.152 | 72 |
+| Zonaprop | galpones | 555 | 19 |
+| Zonaprop | edificios | 761 | 26 |
+| Mercado Libre | terrenos | 2.000 (tope del portal) | 42 |
+| Mercado Libre | casas | 1.806 | 33 |
+| Mercado Libre | galpones | 884 | 17 |
+
+En total son 251 páginas de Zonaprop contra ~60 que tolera una corrida. **Gonzalo eligió la descarga incremental (Fase C):** la primera descarga se reparte en ~6 corridas y después cada corrida baja las novedades y sigue refrescando el resto.
+
+**Pendiente:** Mercado Libre corta en 2.000 resultados, así que a terrenos le faltan avisos. Hay que partir esa búsqueda por precio, con un formato de URL todavía sin probar.
 
 ## Decidido por Gonzalo (14/11/2026)
 

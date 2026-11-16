@@ -152,6 +152,8 @@ def _search(crawler: _Crawler, url: str, max_pages: int) -> tuple[list[dict], in
 
 
 def fetch_zonaprop(cfg: dict, run_dir: Path) -> tuple[list[dict], PortalHealth]:
+    if (cfg.get("incremental") or {}).get("activo"):          # municipios too big for one run (CABA)
+        return fetch_zonaprop_incremental(cfg, run_dir)
     p, prod = cfg["portales"]["zonaprop"], cfg["productos"]
     health = PortalHealth("zonaprop")
     crawler = _Crawler(p, health)
@@ -348,3 +350,151 @@ def fetch_mercadolibre(cfg: dict, run_dir: Path, cache_path: Path) -> tuple[list
     (run_dir / "raw_mercadolibre.json").write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
     print(f"mercadolibre: {len(out)} avisos, {health.pages_ok} páginas, {len(health.errors)} errores")
     return out, health
+
+
+# ---------------------------------------------------------------- Zonaprop, incremental download (Fase C)
+#
+# For municipios too big for one run (CABA: ~250 pages vs. the ~60 Zonaprop tolerates). Decided by Gonzalo on
+# 16/11/2026. The listings live in a stock on disk (incremental.estado); each run spends at most
+# incremental.paginas_por_corrida pages:
+#   1. news: for every search already walked once, its newest-first pages until a page brings nothing new
+#      (at most novedades_max_paginas);
+#   2. sweep: with the rest of the budget, the price-slice walk continues where the last run stopped. When a
+#      search is walked to the end the cycle closes: its listings not seen during the cycle are dropped (sold or
+#      removed) and the next sweep starts again from the cheapest. The first sweep is the seed.
+# Every run evaluates the whole stock, as if it had downloaded everything; the novelty logic downstream (Sheet,
+# mail) doesn't change. A block stops the run's crawl (progress is kept) and is reported as a failure.
+
+import gzip as _gzip
+from datetime import date as _date
+
+
+def _state_path(cfg: dict) -> Path:
+    from .config import path
+    slug = cfg["municipio"]["slug"]
+    return path(cfg["incremental"]["estado"].format(sufijo="" if slug == "san_isidro" else f"_{slug}"))
+
+
+def load_state(file: Path) -> dict:
+    if not file.exists():
+        return {"stock": {}, "busquedas": {}}
+    return json.loads(_gzip.decompress(file.read_bytes()))
+
+
+def save_state(file: Path, state: dict) -> None:
+    file.parent.mkdir(parents=True, exist_ok=True)
+    tmp = file.with_suffix(".tmp")
+    tmp.write_bytes(_gzip.compress(json.dumps(state, ensure_ascii=False).encode("utf-8")))
+    tmp.replace(file)
+
+
+def _slice(crawler: _Crawler, url: str, floor: float | None, max_pages: int) -> tuple[list[dict], float | None, int]:
+    """One price slice of a search from `floor` (None = the cheapest): (postings, next floor or None if it was the
+    last slice, total announced by that slice's first page)."""
+    s_url = url[:-len(".html")] + (f"-mas-{int(floor)}-dolar" if floor else "") + "-orden-precio-ascendente.html"
+    first = crawler.page(s_url)
+    total = int(first[1].get("total") or 0)
+    if int(first[1].get("totalPages") or 1) <= max_pages:
+        return crawler.pages(s_url, first)[0], None, total
+    chunk = list(first[0])
+    for n in range(2, max_pages + 1):
+        chunk.extend(crawler.page(_page_url(s_url, n))[0])
+    prices = [p for p in (_usd_price(c) for c in chunk) if p]
+    new_floor = max(prices) if prices else None
+    if new_floor is None or (floor is not None and new_floor <= floor):
+        raise ValueError(f"{url}: no se pudo avanzar por tramos de precio (tope USD {floor})")
+    return chunk, new_floor, total
+
+
+def fetch_zonaprop_incremental(cfg: dict, run_dir: Path) -> tuple[list[dict], PortalHealth]:
+    p, inc, prod = cfg["portales"]["zonaprop"], cfg["incremental"], cfg["productos"]
+    health = PortalHealth("zonaprop")
+    crawler = _Crawler(p, health)
+    file = _state_path(cfg)
+    state = load_state(file)
+    stock, searches = state["stock"], state["busquedas"]
+    today = _date.today().isoformat()
+    budget = inc["paginas_por_corrida"]
+    urls = list(p["start_urls"]) + (list(prod["comparables"].get("busquedas_zonaprop") or []) if prod["activo"] else [])
+    for url in urls:
+        searches.setdefault(url, {"floor": None, "ciclo_inicio": today, "ciclos_completos": 0, "total_portal": None})
+
+    def keep(posts: list[dict], url: str) -> int:
+        new = 0
+        for post in posts:
+            pid = str(post.get("postingId"))
+            new += pid not in stock
+            stock[pid] = {"item": post, "visto": today, "busqueda": url,
+                          "primera_vez": stock.get(pid, {}).get("primera_vez", today)}
+        return new
+
+    def left() -> int:
+        return budget - health.pages_ok
+
+    try:
+        # 1. news of the searches already walked once
+        for url in urls:
+            st = searches[url]
+            if not st["ciclos_completos"]:
+                continue
+            recent = url[:-len(".html")] + inc["sufijo_recientes"] + ".html"
+            new = 0
+            for n in range(1, inc["novedades_max_paginas"] + 1):
+                if left() < 1:
+                    break
+                posts = crawler.page(_page_url(recent, n))[0]
+                got = keep(posts, url)
+                new += got
+                if not got:
+                    break
+            print(f"  novedades {url.rsplit('/', 1)[-1]}: {new} avisos nuevos")
+            save_state(file, state)
+
+        # 2. sweep, search by search, slice by slice, while a whole slice still fits in the budget
+        turn = state.get("turno", 0) % len(urls)
+        order = urls[turn:] + urls[:turn]
+        for k, url in enumerate(order):
+            st = searches[url]
+            while left() >= p["max_paginas_por_busqueda"]:
+                posts, nxt, total = _slice(crawler, url, st["floor"], p["max_paginas_por_busqueda"])
+                if st["floor"] is None:
+                    st["total_portal"] = total
+                keep(posts, url)
+                if nxt is not None:
+                    st["floor"] = nxt
+                    save_state(file, state)
+                    continue
+                # the search was walked to the end: close the cycle
+                seen = [pid for pid, v in stock.items() if v["busqueda"] == url and v["visto"] >= st["ciclo_inicio"]]
+                gone = [pid for pid, v in stock.items() if v["busqueda"] == url and v["visto"] < st["ciclo_inicio"]]
+                for pid in gone:
+                    del stock[pid]
+                expected = st["total_portal"] or 0
+                if len(seen) < p["cobertura_minima"] * expected:
+                    health.errors.append(f"{url}: el ciclo completo vio {len(seen)} de {expected} avisos")
+                print(f"  ciclo completo {url.rsplit('/', 1)[-1]}: {len(seen)} avisos, {len(gone)} dados de baja")
+                st.update(floor=None, ciclo_inicio=today, ciclos_completos=st["ciclos_completos"] + 1)
+                state["turno"] = (urls.index(url) + 1) % len(urls)
+                save_state(file, state)
+                break
+            else:
+                state["turno"] = urls.index(url)
+                break
+    except BlockedError as e:
+        health.errors.append(f"{e} (descarga incremental: se sigue en la próxima corrida)")
+    except (RuntimeError, ValueError) as e:
+        health.errors.append(str(e))
+    save_state(file, state)
+
+    pending = [u for u in urls if not searches[u]["ciclos_completos"]]
+    if pending:
+        seeded = sum(1 for v in stock.values() if v["busqueda"] in pending)
+        health.warnings.append(f"primera descarga en curso: {len(pending)} búsqueda(s) sin terminar, "
+                               f"{seeded} avisos bajados de ellas hasta ahora")
+    items = [{**v["item"], "_search_url": v["busqueda"]} for v in stock.values()]
+    health.listings = len(items)
+    raw_path = run_dir / "raw_zonaprop.json"
+    raw_path.write_text(json.dumps(items, ensure_ascii=False), encoding="utf-8")
+    print(f"zonaprop (incremental): {len(items)} avisos en stock, {health.pages_ok} páginas, "
+          f"{len(health.errors)} errores -> {raw_path}")
+    return items, health

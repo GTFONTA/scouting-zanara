@@ -40,6 +40,7 @@ portales:
       - https://www.zonaprop.com.ar/bodegas-galpones-venta-capital-federal-mas-300-m2.html
       - https://www.zonaprop.com.ar/edificios-venta-capital-federal.html
   mercadolibre:
+    max_detalles_por_corrida: 600  # ~4.700 fichas la primera vez: se reparten en varias corridas
     busquedas:
       - url: https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/capital-federal/_TOTAL*AREA_200-*
         tipologia: terreno
@@ -47,6 +48,9 @@ portales:
         tipologia: casa
       - url: https://inmuebles.mercadolibre.com.ar/depositos-y-galpones/venta/capital-federal/_TOTAL*AREA_300-*
         tipologia: galpon
+
+incremental:                       # medido el 16/11: Zonaprop 251 páginas, Mercado Libre 92 (Gonzalo: incremental)
+  activo: true
 
 productos:
   comparables:                    # CABA no usa la vía loteo: sin búsquedas de lotes chicos
