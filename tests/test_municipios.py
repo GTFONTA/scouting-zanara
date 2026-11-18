@@ -184,3 +184,44 @@ def test_caba_geocoder_sends_street_and_number_apart(monkeypatch, caba):
     assert c3d.geocode("Falsa 123") is None and c3d.geocode("Palermo") is None
     monkeypatch.setattr(requests.Session, "get", lambda self, url, params=None, **kw: FakeResp("Parametros incorrectos."))
     assert c3d.geocode("Moldes 2477") is None                          # a string answer: no position, no crash
+
+
+def test_caba_generic_pin_is_located_by_address(caba):
+    """18/11/2026: Mendoza lots loaded as 'Capital Federal' all sat on the portal's default pin."""
+    pts = [(-34.5600, -58.4620, 617, 1500000)] * 4
+    items = _zonaprop_items(pts)
+    for i, it in enumerate(items):
+        it["postingLocation"]["address"]["name"] = f"Calle Inventada {100 + i}"
+    rows = motor_caba.process({"zonaprop": items}, caba, [])
+    assert all(r["pin_generico"] for r in rows)
+    assert {r["motivo_descarte"] for r in rows} == {"sin_ubicacion"}     # the test geocoder doesn't know them
+    one = motor_caba.process({"zonaprop": _zonaprop_items(pts[:1])}, caba, [])[0]
+    assert not one.get("pin_generico") and one["resultado"] == "oportunidad"
+
+
+def test_caba_retries_a_503_and_recovers_after_an_outage(monkeypatch, caba):
+    calls = {"n": 0}
+
+    class Resp(FakeResp):
+        def __init__(self, data, code=200):
+            super().__init__(data)
+            self.status_code = code
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise requests.HTTPError(f"{self.status_code} Server Error")
+
+    def get(self, url, params=None, **kw):
+        calls["n"] += 1
+        if calls["n"] <= 30:                                   # an outage longer than the retries
+            raise requests.ConnectionError("reset")
+        return Resp(BUILDABLE)
+    monkeypatch.setattr(requests.Session, "get", get)
+    c3d = motor_caba.Ciudad3D(caba)
+    for _ in range(20):
+        try:
+            c3d.buildable("039-087-007")
+            break
+        except RuntimeError:
+            pass
+    assert c3d.cache["smp"]["039-087-007"] == BUILDABLE and c3d.recoveries >= 1

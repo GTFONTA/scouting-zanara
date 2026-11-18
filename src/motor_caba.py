@@ -66,23 +66,46 @@ class Ciudad3D:
         for k in ("pin", "smp", "plusvalia", "geo"):
             self.cache.setdefault(k, {})
         self.session = requests.Session()
-        self.asked, self.errors, self.failed_in_a_row = 0, [], 0
+        self.asked, self.errors, self.failed_in_a_row, self.recoveries = 0, [], 0, 0
+        self.stopped = 0                         # queries skipped after giving up (summarised, not one error each)
         self._uva = None
 
     def _get(self, url: str, params: dict | None = None) -> dict | list:
-        if self.failed_in_a_row >= self.c["errores_max"] or self.asked >= self.c["max_consultas_por_corrida"]:
-            raise RuntimeError("se dejó de consultar (tope de consultas o demasiados errores seguidos)")
-        time.sleep(self.c["pausa_s"])
-        self.asked += 1
-        try:
-            r = self.session.get(url, params=params, timeout=60)
-            r.raise_for_status()
-            out = r.json()
+        """One query, with retries for the server's hiccups (503, connection reset). After `errores_max` failures in
+        a row it waits `espera_recupero_s` and tries again, up to `recuperos_max` times; then it gives up for the run.
+        First night run (18/11/2026): a short outage tripped the old stop for good and left 1.719 listings unchecked."""
+        if self.asked >= self.c["max_consultas_por_corrida"]:
+            self.stopped += 1
+            raise RuntimeError("se dejó de consultar (tope de consultas)")
+        if self.failed_in_a_row >= self.c["errores_max"]:
+            if self.recoveries >= self.c.get("recuperos_max", 3):
+                self.stopped += 1
+                raise RuntimeError("se dejó de consultar (Ciudad 3D no responde)")
+            self.recoveries += 1
+            time.sleep(self.c.get("espera_recupero_s", 180))
             self.failed_in_a_row = 0
-            return out
-        except (requests.RequestException, ValueError) as e:
-            self.failed_in_a_row += 1
-            raise RuntimeError(f"{type(e).__name__}: {str(e)[:150]}") from e
+        waits = list(self.c.get("reintentos_s", [10, 30]))
+        while True:
+            time.sleep(self.c["pausa_s"])
+            self.asked += 1
+            try:
+                r = self.session.get(url, params=params, timeout=60)
+                if getattr(r, "status_code", 200) >= 500 and waits:
+                    time.sleep(waits.pop(0))
+                    continue
+                r.raise_for_status()
+                out = r.json()
+                self.failed_in_a_row = 0
+                return out
+            except (requests.ConnectionError, requests.Timeout) as e:
+                if waits:
+                    time.sleep(waits.pop(0))
+                    continue
+                self.failed_in_a_row += 1
+                raise RuntimeError(f"{type(e).__name__}: {str(e)[:150]}") from e
+            except (requests.RequestException, ValueError) as e:
+                self.failed_in_a_row += 1
+                raise RuntimeError(f"{type(e).__name__}: {str(e)[:150]}") from e
 
     def parcel(self, lat: float, lon: float) -> dict | None:
         """Parcel at the pin; a pin on the street (no parcel) tries 8 points around it, 12 m away."""
@@ -148,7 +171,11 @@ class Ciudad3D:
         self.file.write_text(json.dumps(self.cache, ensure_ascii=False), encoding="utf-8")
 
     def health(self) -> dict:
-        errors = self.errors[:3] + ([f"... y {len(self.errors) - 3} errores más"] if len(self.errors) > 3 else [])
+        real = [e for e in self.errors if "se dejó de consultar" not in e]
+        errors = real[:3] + ([f"... y {len(real) - 3} errores más"] if len(real) > 3 else [])
+        if self.stopped:
+            errors.append(f"se dejó de consultar: {self.stopped} consultas sin hacer"
+                          f" (Ciudad 3D no respondió tras {self.recoveries} esperas)")
         return {"portal": "Ciudad 3D", "paginas_ok": self.asked, "avisos": len(self.cache["smp"]), "errores": errors,
                 "falla": bool(self.errors)}
 
@@ -171,7 +198,9 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
         r["motivo_descarte"] = "superficie_menor_prefiltro"
         return
     lat, lon = r.get("lat"), r.get("lon")
-    exact = (r.get("direccion_visibilidad") or "EXACT").upper() == "EXACT"
+    exact = (r.get("direccion_visibilidad") or "EXACT").upper() == "EXACT" and not r.get("pin_generico")
+    if r.get("pin_generico"):
+        r["alertas"].append("pin_generico (el mismo punto en varios avisos distintos: se ubica por la dirección)")
     r["flag_confianza"] = "exacta" if lat is not None and exact else ""
     if not r["flag_confianza"]:
         g = c3d.geocode(r.get("direccion") or "")
@@ -199,6 +228,9 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
     r.update(smp=p["smp"], direccion_catastro=p.get("direccion", ""), superficie_catastro_m2=sup_cat or None,
              frente_catastro_m=_f(p.get("frente")) or None)
     r["parcela_coincide"] = bool(sup_cat) and abs(sup_cat - s) <= k["tolerancia_superficie"] * s
+    if r.get("pin_generico") and not r["parcela_coincide"]:
+        r["motivo_descarte"] = "ubicacion_dudosa (pin genérico del portal y la parcela de la dirección no coincide)"
+        return
     if not r["parcela_coincide"]:
         r["alertas"].append(f"parcela_del_pin_no_coincide (catastro {sup_cat:.0f} m2): FOT de la parcela vecina")
     fot = e.get("fot") or {}
@@ -302,6 +334,19 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
 ADDRESS = re.compile(r"^\s*(.*?[A-Za-zÁÉÍÓÚÑáéíóúñ.].*?)\s+(?:al\s+|n[°º]\s*)?(\d{1,5})\b", re.I)
 
 
+def _mark_generic_pins(rows: list[dict], min_listings: int) -> None:
+    """A point shared by `min_listings` or more listings with different addresses is the portal's default pin
+    (e.g. Congreso or the Obelisco for 'Capital Federal'), not the lot's position."""
+    by_point = {}
+    for r in rows:
+        if r.get("lat") is not None and r.get("lon") is not None:
+            by_point.setdefault((round(r["lat"], 5), round(r["lon"], 5)), []).append(r)
+    for group in by_point.values():
+        if len({(r.get("direccion") or "").strip().lower() for r in group}) >= min_listings:
+            for r in group:
+                r["pin_generico"] = True
+
+
 def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> list[dict]:
     c3d = Ciudad3D(cfg)
     rows, seen = [], set()
@@ -312,6 +357,7 @@ def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> lis
                 continue
             seen.add(r["id"])
             rows.append(r)
+    _mark_generic_pins(rows, cfg["caba"].get("pin_generico_min_avisos", 4))
     mep = None
     if any(not r["motivo_descarte"] for r in rows):
         mep = dolar_mep(cfg["normalizacion"])["venta"]

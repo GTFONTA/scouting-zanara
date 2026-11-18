@@ -14,7 +14,11 @@ caba:
   cache: data/cache_caba.json
   pausa_s: 0.7
   max_consultas_por_corrida: 3000
-  errores_max: 8
+  errores_max: 8                # errores seguidos: se espera espera_recupero_s y se reintenta (hasta recuperos_max)
+  reintentos_s: [10, 30]        # 503 o conexión cortada: se reintenta la misma consulta tras estas esperas
+  espera_recupero_s: 180
+  recuperos_max: 3
+  pin_generico_min_avisos: 4    # el mismo punto en 4+ avisos con direcciones distintas = pin por defecto del portal
   bbox: [[-58.535, -58.33], [-34.71, -34.52]]   # [lon min, lon max], [lat min, lat max] de la Ciudad
   tolerancia_superficie: 0.15   # parcela del pin con superficie ±15% de la del aviso = es la del aviso
   m2_construibles_min: 1000
