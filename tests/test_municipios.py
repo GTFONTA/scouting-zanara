@@ -163,3 +163,24 @@ def test_caba_expensive_lot_is_discarded(caba):
 def test_caba_outside_the_city(caba):
     rows = motor_caba.process({"zonaprop": _zonaprop_items([(-34.47, -58.51, 900, 500000)])}, caba, [])
     assert rows[0]["motivo_descarte"] == "fuera_del_municipio"
+
+
+def test_caba_geocoder_sends_street_and_number_apart(monkeypatch, caba):
+    """First night run (17/11/2026): USIG answered the JSON string "Parametros incorrectos." and the run crashed."""
+    sent = []
+
+    def get(self, url, params=None, **kw):
+        sent.append(params)
+        if params.get("altura") is None:
+            return FakeResp("Parametros incorrectos.")
+        if params["calle"] == "Falsa":
+            return FakeResp({"Normalizacion": {"TipoResultado": "ErrorCalleInexistente"}})
+        return FakeResp({"GeoCodificacion": {"x": "100081.854642", "y": "107665.100091"}})
+    monkeypatch.setattr(requests.Session, "get", get)
+    c3d = motor_caba.Ciudad3D(caba)
+    lat, lon = c3d.geocode("Av. Cabildo al 1200, Belgrano")
+    assert sent[-1] == {"calle": "Av. Cabildo", "altura": 1200, "desambiguar": 1}
+    assert -34.6 < lat < -34.5 and -58.5 < lon < -58.4
+    assert c3d.geocode("Falsa 123") is None and c3d.geocode("Palermo") is None
+    monkeypatch.setattr(requests.Session, "get", lambda self, url, params=None, **kw: FakeResp("Parametros incorrectos."))
+    assert c3d.geocode("Moldes 2477") is None                          # a string answer: no position, no crash

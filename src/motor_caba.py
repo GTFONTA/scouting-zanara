@@ -111,17 +111,21 @@ class Ciudad3D:
         return self.cache["plusvalia"][key]
 
     def geocode(self, address: str) -> tuple[float, float] | None:
-        """USIG: street and number in CABA -> (lat, lon); None if it isn't an exact address."""
-        if not re.search(r"\d", address or ""):
+        """USIG: street and number in CABA -> (lat, lon); None if it isn't an exact address.
+        The service wants street and number apart (calle=Moldes&altura=2477); with the whole address in `calle`
+        it answers the JSON string "Parametros incorrectos." (first night run, 17/11/2026)."""
+        m = ADDRESS.match(address or "")
+        if not m:
             return None
-        key = address.strip().lower()
+        street, number = m.group(1).strip(" ,."), int(m.group(2))
+        key = f"{street.lower()}|{number}"
         if key not in self.cache["geo"]:
             try:
                 d = self._get(f"{self.c['usig']}/rest/normalizar_y_geocodificar_direcciones",
-                              {"calle": re.sub(r"\s+al\s+", " ", address), "desambiguar": 1})
-                g = d.get("GeoCodificacion") or {}
+                              {"calle": street, "altura": number, "desambiguar": 1})
+                g = (d.get("GeoCodificacion") if isinstance(d, dict) else None) or {}
                 self.cache["geo"][key] = list(_GKBA(float(g["x"]), float(g["y"])))[::-1] if g.get("x") else None
-            except (RuntimeError, ValueError, KeyError) as e:
+            except (RuntimeError, ValueError, KeyError, TypeError) as e:
                 self.errors.append(f"geocodificación {address[:40]}: {e}")
                 return None
         g = self.cache["geo"][key]
@@ -295,6 +299,9 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
         r["resultado"], r["via"], r["motivo_descarte"] = "gran_predio", "gran_predio", ""
 
 
+ADDRESS = re.compile(r"^\s*(.*?[A-Za-zÁÉÍÓÚÑáéíóúñ.].*?)\s+(?:al\s+|n[°º]\s*)?(\d{1,5})\b", re.I)
+
+
 def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> list[dict]:
     c3d = Ciudad3D(cfg)
     rows, seen = [], set()
@@ -308,9 +315,17 @@ def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> lis
     mep = None
     if any(not r["motivo_descarte"] for r in rows):
         mep = dolar_mep(cfg["normalizacion"])["venta"]
-    for r in rows:
-        evaluate(r, c3d, cfg, mep)
-        r["alertas"] = "; ".join(r["alertas"])
+    broken = 0
+    for i, r in enumerate(rows, 1):
+        try:
+            evaluate(r, c3d, cfg, mep)
+        except Exception as e:                       # noqa: BLE001 - one odd listing must never stop the run
+            broken += 1
+            r["resultado"], r["motivo_descarte"] = "descartado", f"error_evaluacion ({type(e).__name__})"
+            c3d.errors.append(f"aviso {r.get('id')}: {type(e).__name__}: {str(e)[:120]}")
+        r["alertas"] = "; ".join(r["alertas"]) if isinstance(r["alertas"], list) else r["alertas"]
+        if i % 100 == 0:
+            c3d.save()                               # a crash later doesn't lose the API answers
     c3d.save()
     if health is not None:
         health.append(c3d.health())

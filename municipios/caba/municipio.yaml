@@ -29,6 +29,8 @@ caba:
 
 zonificacion:
   superficie_min_prefiltro: 200   # con FOT 5-7 un lote de 200 m2 ya pasa los 1.000 m2 construibles
+  fot_max: 99                     # sin prefiltro por precio: en CABA la referencia es la incidencia de la Ley 6062
+                                  # del distrito (puede pasar los 1.000 USD/m2), no los 500 USD/m2 de San Isidro
 
 portales:
   zonaprop:
@@ -40,7 +42,8 @@ portales:
       - https://www.zonaprop.com.ar/bodegas-galpones-venta-capital-federal-mas-300-m2.html
       - https://www.zonaprop.com.ar/edificios-venta-capital-federal.html
   mercadolibre:
-    max_detalles_por_corrida: 1500 # ~4.700 fichas la primera vez: se reparten en tandas nocturnas (~2 h cada una)
+    max_detalles_por_corrida: 500  # 17/11: Mercado Libre bloqueó las fichas tras ~1.230 en una tanda (y seguía a las 3:00);
+                                   # con 500 por tanda, ~3.400 pendientes salen en ~4 noches
     busquedas:
       - url: https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/capital-federal/_TOTAL*AREA_200-*
         tipologia: terreno
