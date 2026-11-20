@@ -88,7 +88,7 @@ runs/<fecha>/      # crudo bajado + resultado.csv de cada corrida (excluido de g
 
 ## Multi-municipio (14/11/2026, rama `dev`; detalle en "RESUMEN - Escalado a CABA Tigre y San Fernando.md")
 - `config.yaml` sigue siendo San Isidro. Cada otro municipio tiene `municipios/<slug>/municipio.yaml`, que se superpone a `config.yaml` (los dicts se mezclan; una clave con `!` al final reemplaza). `python -m src.main --municipio <slug>`; `correr_semanal.ps1 -Municipio <slug>`. Corridas en `runs/<slug>/<fecha>`.
-- Motores: `zonas` (capa de zonas + `normativa_zonas.csv`: San Isidro, Tigre, San Fernando) y `caba` (`src/motor_caba.py`: parcela y edificabilidad de Ciudad 3D, plusvalía Ley 6062).
+- Motores: `zonas` (capa de zonas + `normativa_zonas.csv`: San Isidro, Tigre, San Fernando) y `caba` (`src/motor_caba.py`: parcela de Ciudad 3D; m² = envolvente del Código Urbanístico, nunca el FOT; plusvalía de la Ley 6062 sobre el 80% de los m². Normativa y método en `municipios/caba/GUIA_NORMATIVA.md`; decisiones de Gonzalo del 19/11/2026).
 - Tigre y San Fernando: zonas y normativa de UrbaSIG (Provincia) con `tools/municipio_pba.py`; localidades y calles de OSM. Cada uno documenta sus decisiones en `municipios/<slug>/NORMATIVA.md` (a validar por Gonzalo). Mapa de control: `tools/mapa_municipio.py <slug>`.
 - Municipios nuevos en modo prueba (`municipio.en_prueba: true`): mail con asunto "[EN PRUEBA]" solo a `mail.para` (o la primera dirección de `MAIL_TO`), sin Sheet propia (`sheet.id` vacío = `--sin-sheet`).
 - Volumen de búsquedas: `tools/medir_busquedas.py <slug>` abre solo la primera página de cada búsqueda. Nunca antes de una corrida semanal.

@@ -60,10 +60,8 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 - Casas agrupadas: no se calculan, porque UrbaSIG no da m² por vivienda.
 
 **CABA**
-- m² construibles: el mejor de dos escenarios.
-  - **FOT:** sin plusvalía.
-  - **Envolvente:** altura del plano límite ÷ 3 m × 65% de la planta, pagando la plusvalía de los m² que superan el FOT entre medianeras.
-- **Plusvalía:** la de la API. Cuando la API da 0 por encima del FOT, se aplica la fórmula de la Ley 6062 sin reducciones, con flag.
+- **m² construibles:** desde el 19/11/2026 salen siempre de la envolvente del Código Urbanístico. Se cuentan pisos de 2,90 m, los retiros y una eficiencia de planta de 0,85 o 0,75 según el frente. El FOT ya no se usa como m² (ver `municipios/caba/GUIA_NORMATIVA.md`).
+- **Plusvalía:** 0,8 × m² − FOT × superficie, calculada en el motor (igual a la API).
 - **Umbral:** oportunidad si la incidencia con plusvalía ≤ 0,8 × la incidencia oficial de la Ley 6062 del distrito; casi hasta 1,0; además, más de 1.000 m² construibles. Gran predio desde 1.500 m² (los dos valores confirmados por Gonzalo el 14/11).
 - **Catalogado integral o estructural:** se descarta. **Cautelar:** como mucho sale como casi.
 - **Búsquedas:** terrenos desde 200 m², casas y galpones desde 300 m², edificios sin filtro.
@@ -71,7 +69,7 @@ Trabajo del 13 y 14/11/2026, a pedido de Gonzalo: "armar un scouting para CABA, 
 ## Dudas abiertas (para Gonzalo)
 
 1. ~~**CABA:** plusvalía y referencia del umbral~~ → **decidido por Gonzalo el 14/11/2026:** la plusvalía entra en la incidencia y la referencia es la Ley 6062 por distrito (0,8 / 1,0).
-2. **CABA:** la envolvente estimada (3 m por piso y 65% de la planta) hay que compararla con Ciudad 3D en 3 o 4 casos reales.
+2. ~~**CABA:** la envolvente estimada~~ → **decidido por Gonzalo el 19/11/2026:** 2,90 m entre pisos, eficiencia 0,85/0,75, sin escenario FOT, y señal de completamiento y esquina (ver `municipios/caba/GUIA_NORMATIVA.md`).
 3. ~~**Tigre y San Fernando:** umbrales y zonas dudosas~~ → **decidido por Gonzalo el 14/11/2026:** umbrales 350 / 450; Tigre C1 a C4 sí con cloaca y R4 sí desde 1.000 m²; San Fernando C3 y C3A sí, R3, R3A, R3B y R4 no.
 4. **Volumen:** CABA y Tigre pueden superar lo que Zonaprop tolera por corrida (unas 60 páginas). Si es así, hay que subir los filtros de superficie o hacer primero la Fase C (descarga incremental con presupuesto diario).
 5. **Validación manual:** 10 a 15 avisos reales por municipio, pasados a mano, antes de sacarlos del modo prueba (checklist de la sección 6 del prompt).

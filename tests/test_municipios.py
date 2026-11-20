@@ -104,10 +104,13 @@ PARCEL = {"smp": "039-087-007", "direccion": "MOLDES 2477", "superficie_total": 
 BUILDABLE = {"sup_max_edificable": 0, "sup_edificable_planta": 613.79, "altura_max": [31.2, 0, 0, 0],
              "altura_max_plano_limite": 38.0, "plusvalia": {"incidencia_uva": 420.0, "alicuota": 0.35, "distrito_cpu": "C2"},
              "fot": {"fot_medianera": 5.0, "fot_perim_libre": 7.0, "fot_semi_libre": 5.0},
-             "parcelas_linderas": {"aph_linderas": False}, "catalogacion": {"proteccion": None},
+             "parcelas_linderas": {"aph_linderas": False, "smp_linderas": ["039-087-006", "039-087-008"]},
+             "catalogacion": {"proteccion": None},
              "distrito_especial": [], "tipica": "T", "afectaciones": {"riesgo_hidrico": 1}, "superficie_parcela": 613.8}
 PLUS = {"plusvalia_em": 111925.8, "plusvalia_pl": 0, "plusvalia_sl": 111925.8, "incidencia_uva": 420.0}
 UVA = {"results": [{"detalle": [{"fecha": "2026-11-14", "valor": 2196.12}]}]}
+NEIGHBOURS = {"039-087-006": {"smp": "039-087-006", "pisos_sobre_rasante": "12"},      # taller than C.M. 31,2 m
+              "039-087-008": {"smp": "039-087-008", "pisos_sobre_rasante": "2"}}
 
 
 class FakeResp:
@@ -124,6 +127,8 @@ class FakeResp:
 @pytest.fixture
 def caba(monkeypatch, tmp_path):
     def get(self, url, params=None, **kw):
+        if "catastro/parcela" in url and "smp" in params:
+            return FakeResp(NEIGHBOURS.get(params["smp"], {}))
         if "catastro/parcela" in url:
             return FakeResp(PARCEL if params["lat"] < -34.5 else {})
         if "seccion_edificabilidad" in url:
@@ -146,13 +151,46 @@ def test_caba_hit_with_plusvalia(caba):
     rows = motor_caba.process({"zonaprop": _zonaprop_items([(-34.5600, -58.4620, 617, 1500000)])}, caba, health)
     r = rows[0]
     assert r["smp"] == "039-087-007" and r["parcela_coincide"]
-    assert r["fot_usado"] == 7.0 and r["tipo_fot"] == "perímetro libre"
-    assert r["escenario"] == "envolvente" and r["m2_construibles"] == round(613.79 * 0.65 * 12)
-    assert r["plusvalia_usd"] == round(111925.8 * 2196.12 / 1580.9)
+    # the FOT only sets the plusvalía: entre medianeras (5), not the 7 of perímetro libre
+    assert r["fot_usado"] == 5.0 and r["tipo_fot"] == "medianera"
+    # C.M. 31,2 m: PB+9 at 2,90 m + 2 set-backs (44 m deep: 2 m and 8 m shorter) + basamento; 13,93 m front -> 0,75
+    plan, net = 613.79, 613.79 * 0.75
+    m2 = net * 10 + net * ((plan / 13.93 - 2) + (plan / 13.93 - 8)) / (plan / 13.93) + (617 - plan) * 0.75 * 2
+    assert r["pisos"] == "PB+9 + 2 retiros + basamento" and r["eficiencia_planta"] == 0.75
+    assert r["m2_construibles"] == round(m2)
+    plus_uva = (0.8 * m2 - 5.0 * 617) * 420.0 * 0.35                    # Ley 6062 / 6710: 80% of the m2
+    assert r["plusvalia_uva"] == round(plus_uva) and r["m2_sin_plusvalia"] == round(5.0 * 617 / 0.8)
+    assert r["plusvalia_usd"] == round(plus_uva * 2196.12 / 1580.9)
     assert r["incidencia_total_usd_m2"] > r["incidencia_usd_m2"]
     assert r["resultado"] == "oportunidad" and r["ratio_incidencia"] <= 0.8
     assert "riesgo_hidrico" in r["flags"]
+    assert r["potencial_extra"].startswith("potencial extra, revisar por completamiento y esquina")
+    assert "039-087-006" in r["potencial_extra"] and "039-087-008" not in r["potencial_extra"]
     assert health[-1]["portal"] == "Ciudad 3D" and not health[-1]["falla"]
+
+
+def test_caba_envelope_floors_per_unit(caba):
+    """2,90 m between floors (Gonzalo, 19/11/2026): PB+12 / +9 / +6 / +4 with 2 set-backs; USAB PB+4 / +3 / +2."""
+    k = caba["caba"]
+    table = {(38, 45): "PB+12 + 2 retiros", (31.2, 38.2): "PB+9 + 2 retiros", (22.8, 29.8): "PB+6 + 2 retiros",
+             (17.2, 24.2): "PB+4 + 2 retiros", (14.6, 14.6): "PB+4", (12, 12): "PB+3", (9, 9): "PB+2"}
+    for (h, limit), label in table.items():
+        assert motor_caba.envelope(375, 187.5, h, limit, None, k)["pisos"] == label
+    # typical 8,66 x 43,30 lot in U.S.A.M.: 5 full floors + set-backs of 19,65 and 13,65 m depth, efficiency 0,85
+    e = motor_caba.envelope(375, 187.5, 17.2, 24.2, 8.66, k)
+    depth = 187.5 / 8.66
+    assert e["eficiencia"] == 0.85
+    assert e["m2"] == pytest.approx(187.5 * 0.85 * (5 + ((depth - 2) + (depth - 8)) / depth))
+
+
+def test_caba_no_plusvalia_up_to_125_percent_of_the_fot(caba):
+    small = dict(BUILDABLE, altura_max=[9.0, 0, 0, 0], altura_max_plano_limite=9.0)      # U.S.A.B. 0: PB+2
+    caba["caba"]["m2_construibles_min"] = 0
+    c3d = motor_caba.Ciudad3D(caba)
+    c3d.cache["smp"]["039-087-007"] = small
+    r = motor_caba.normalize(motor_caba.from_zonaprop(_zonaprop_items([(-34.56, -58.462, 617, 300000)])[0]), caba)
+    motor_caba.evaluate(r, c3d, caba, 1580.9)
+    assert r["m2_construibles"] < 1.25 * 5.0 * 617 and r["plusvalia_uva"] == 0
 
 
 def test_caba_expensive_lot_is_discarded(caba):

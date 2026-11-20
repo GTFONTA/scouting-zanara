@@ -26,10 +26,29 @@ caba:
   ratio_oportunidad: 0.8
   ratio_casi: 1.0
   sup_min_gran_predio: 1500
-  # Envolvente (cuando Ciudad 3D no da la superficie edificable): pisos = altura del plano límite / altura_piso_m,
-  # planta = superficie edificable en planta x ocupacion_planta (descuenta patios y pulmón; a calibrar con Gonzalo)
-  altura_piso_m: 3.0
-  ocupacion_planta: 0.65
+  # Envolvente del Código Urbanístico (decidido por Gonzalo el 19/11/2026; ver municipios/caba/GUIA_NORMATIVA.md).
+  # Los m2 construibles salen siempre de la envolvente: el FOT de Ciudad 3D solo sirve para la plusvalía.
+  altura_piso_m: 2.90           # entre pisos
+  pb_alta_m: 3.00               # PB mínima en C.A., C.M., U.S.A.A. y U.S.A.M. (art. 6.2)
+  pb_baja_m: 2.60               # PB mínima en U.S.A.B. 0, 1 y 2
+  altura_max_usab_m: 14.60      # hasta esta altura de la unidad se usa pb_baja_m
+  eficiencia_planta_angosta: 0.85   # frente <= frente_angosto_m (descuenta patios y espacio urbano)
+  eficiencia_planta_ancha: 0.75
+  eficiencia_planta_sin_frente: 0.85  # sin frente conocido: la favorable, para no perder oportunidades
+  frente_angosto_m: 10.0
+  fondo_tipico_m: 21.65         # fondo edificable de una manzana estándar (L.F.I. a 1/4 de 86,6 m), sin frente conocido
+  retiro_1_m: 2.0               # primer nivel retirado de la L.O. (art. 6.3)
+  retiro_2_m: 8.0               # segundo nivel: 4 m de la L.O. + 4 m de la L.F.I.
+  retiro_2_banda_minima_m: 4.0  # si el lote solo da la banda mínima de 16 m no se retira del contrafrente
+  banda_minima_m: 16.0
+  fondo_basamento_m: 7.2        # C.A. y C.M.: PB y 1er piso siguen de la L.F.I. a la L.I.B. (1/3 - 1/4 de la manzana)
+  altura_min_basamento_m: 31.0  # unidades con basamento: C.M. (31,20) y C.A. (38)
+  # Plusvalía (Ley 6.062, texto de la Ley 6.710): max(0, 0,8 x m2 - FOT x superficie) x incidencia UVA x alícuota.
+  # Se calcula acá con los datos de Ciudad 3D: coincidió exacto con las 1.066 respuestas de calcular_plusvalia.
+  plusvalia_fraccion_m2: 0.8
+  # Señal "potencial extra, revisar por completamiento y esquina" (solo en oportunidades, casi y grandes predios):
+  completamiento_diferencia_m: 1.40   # lindero más alto que la unidad por más de esto (art. 6.5.5)
+  esquina_diferencia_m: 0.50          # lindero con una unidad de edificabilidad más alta (art. 6.4.6)
 
 zonificacion:
   superficie_min_prefiltro: 200   # con FOT 5-7 un lote de 200 m2 ya pasa los 1.000 m2 construibles

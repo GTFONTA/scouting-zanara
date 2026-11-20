@@ -2,15 +2,21 @@
 
 For each listing with a pin (or an address USIG can geocode):
   1. parcel at the pin: epok /catastro/parcela/?lng&lat -> SMP, catastro surface and front
-  2. edificabilidad of the SMP: epok /cur3d/seccion_edificabilidad -> FOT (medianera / semi libre / perímetro
-     libre: the highest is used, never lose an opportunity), height, district, Ley 6062 land incidence (UVA/m2),
+  2. edificabilidad of the SMP: epok /cur3d/seccion_edificabilidad -> height of the unit and of its plano
+     límite, buildable footprint, FOT (only for the plusvalía), district, Ley 6062 land incidence (UVA/m2),
      catalogación, afectaciones (ensanche, apertura, riesgo hídrico), APH
-  3. plusvalía (derecho de desarrollo urbano, Ley 6062): epok /cur3d/calcular_plusvalia with the buildable
-     m2 -> UVA; to USD with the UVA of the BCRA and the dólar MEP
+  3. buildable m2 = the Código Urbanístico envelope (arts. 6.2-6.4, see municipios/caba/GUIA_NORMATIVA.md):
+     footprint x efficiency x floors (2,90 m) + the two set-back floors + the basamento of C.A./C.M.
+     The FOT is NOT a right to build in CABA (decided by Gonzalo, 19/11/2026)
+  4. plusvalía (derecho de desarrollo urbano, Ley 6062 as worded by Ley 6710), computed here:
+     max(0, 0,8 x m2 - FOT x superficie) x incidencia UVA x alícuota; it matched the 1.066 cached answers of
+     /cur3d/calcular_plusvalia exactly. To USD with the UVA of the BCRA and the dólar MEP
+  5. hits only: the side neighbours (catastro floors, unit height) -> "potencial extra, revisar por completamiento
+     y esquina" (arts. 6.5.5 and 6.4.6); a flag, it doesn't change the m2
 Everything is cached by pin / SMP in data/cache_caba.json (one query per parcel, ever).
 
-Classification (municipios/caba/municipio.yaml, decisions to validate with Gonzalo):
-  m2 construibles = superficie del aviso x FOT de la parcela
+Classification (municipios/caba/municipio.yaml):
+  m2 construibles = envolvente
   incidencia total = (precio + plusvalía) / m2 construibles
   incidencia de referencia = incidencia de la Ley 6062 para el distrito (UVA/m2 -> USD/m2): the City's own
       valuation of a buildable m2 of land there, so the threshold follows the barrio by itself
@@ -50,9 +56,9 @@ COLUMNS = FIELDS + [
     "superficie_cubierta_m2", "flag_confianza", "lat_usada", "lon_usada",
     "smp", "direccion_catastro", "superficie_catastro_m2", "frente_catastro_m", "parcela_coincide",
     "distrito_cpu", "fot_medianera", "fot_semi_libre", "fot_perim_libre", "fot_usado", "tipo_fot", "altura_max_m",
-    "m2_fot", "m2_envolvente", "escenario", "m2_construibles", "incidencia_usd_m2", "plusvalia_uva", "uva_ars", "plusvalia_usd", "incidencia_total_usd_m2",
+    "altura_unidad_m", "pisos", "planta_edificable_m2", "eficiencia_planta", "m2_sin_plusvalia", "m2_construibles", "incidencia_usd_m2", "plusvalia_uva", "uva_ars", "plusvalia_usd", "incidencia_total_usd_m2",
     "incidencia_ley6062_uva", "incidencia_referencia_usd_m2", "ratio_incidencia", "proteccion", "afectaciones",
-    "gran_predio", "tipologia_portal",
+    "gran_predio", "potencial_extra", "tipologia_portal",
 ]
 
 
@@ -63,7 +69,7 @@ class Ciudad3D:
         self.c = cfg["caba"]
         self.file = path(self.c["cache"])
         self.cache = json.loads(self.file.read_text(encoding="utf-8")) if self.file.exists() else {}
-        for k in ("pin", "smp", "plusvalia", "geo"):
+        for k in ("pin", "smp", "plusvalia", "geo", "catastro_smp"):
             self.cache.setdefault(k, {})
         self.session = requests.Session()
         self.asked, self.errors, self.failed_in_a_row, self.recoveries = 0, [], 0, 0
@@ -125,6 +131,13 @@ class Ciudad3D:
         if smp not in self.cache["smp"]:
             self.cache["smp"][smp] = self._get(f"{self.c['api']}/cur3d/seccion_edificabilidad/", {"smp": smp})
         return self.cache["smp"][smp]
+
+    def parcel_by_smp(self, smp: str) -> dict | None:
+        """Catastro of a parcel by SMP (floors above ground, covered area): used for the side neighbours."""
+        if smp not in self.cache["catastro_smp"]:
+            d = self._get(f"{self.c['api']}/catastro/parcela/", {"smp": smp})
+            self.cache["catastro_smp"][smp] = d if isinstance(d, dict) and d.get("smp") else None
+        return self.cache["catastro_smp"][smp]
 
     def plusvalia(self, smp: str, area: float) -> dict:
         key = f"{smp}|{round(area)}"
@@ -238,10 +251,13 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
                "perímetro libre": _f(fot.get("fot_perim_libre"))}
     r["fot_medianera"], r["fot_semi_libre"], r["fot_perim_libre"] = options["medianera"], options["semi libre"], \
         options["perímetro libre"]
-    r["tipo_fot"], r["fot_usado"] = max(options.items(), key=lambda t: t[1])
+    # the envelope is built between party walls, so its plusvalía uses the FOT entre medianeras
+    r["tipo_fot"], r["fot_usado"] = ("medianera", options["medianera"]) if options["medianera"] else \
+        max(options.items(), key=lambda t: t[1])
     pv = e.get("plusvalia") or {}
     r["distrito_cpu"] = pv.get("distrito_cpu") or ""
-    r["altura_max_m"] = _f(e.get("altura_max_plano_limite")) or max(map(_f, e.get("altura_max") or [0]))
+    unit_h, limit_h = unit_height(e), _f(e.get("altura_max_plano_limite"))
+    r["altura_unidad_m"], r["altura_max_m"] = unit_h or limit_h or None, limit_h or unit_h or None
     cat = e.get("catalogacion") or {}
     r["proteccion"] = (cat.get("proteccion") or "").upper() if (cat.get("proteccion") or "").upper() != "DESESTIMADO" else ""
     af = e.get("afectaciones") or {}
@@ -249,6 +265,8 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
     flags = []
     if r["proteccion"]:
         flags.append(f"catalogado ({r['proteccion']})")
+    if (cat.get("ley_3056") or "").upper() == "SI" and (cat.get("proteccion") or "").upper() != "DESESTIMADO":
+        flags.append("anterior_a_1941 (Ley 3056: consulta al CAAP antes de demoler)")
     if any((d or {}).get("distrito_especifico") for d in e.get("distrito_especial") or []):
         flags.append("distrito_especial (APH / U / ARE: ver Ciudad 3D)")
     if af.get("ensanche") or af.get("apertura"):
@@ -259,55 +277,48 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
         flags.append("manzana_atipica")
     if (e.get("parcelas_linderas") or {}).get("aph_linderas"):
         flags.append("lindero_APH")
-    if r["fot_usado"] and r["tipo_fot"] != "medianera":
-        flags.append(f"fot_{r['tipo_fot'].replace(' ', '_')} (exige ese tipo de edificio; entre medianeras {options['medianera']:g})")
+    if e.get("cca") == "R-CCA":
+        flags.append("receptora_CCA (puede superar el plano límite comprando capacidad constructiva, art. 10.1.4)")
+    elif e.get("cca") == "E-CCA":
+        flags.append("emisora_CCA (la obra nueva genera certificados vendibles, art. 10.1.3)")
     r["gran_predio"] = s >= k["sup_min_gran_predio"]
-    if not r["fot_usado"]:
+    # Buildable m2: the envelope of the Código Urbanístico. The footprint is Ciudad 3D's (L.O. to L.F.I.), scaled
+    # to the listing's surface; the front is the catastro's when the parcel matches, else the one in the text.
+    front = (r["frente_catastro_m"] if r["parcela_coincide"] else None) or _f(r.get("frente_m")) or None
+    plan_c3d = _f(e.get("sup_edificable_planta"))
+    if plan_c3d and sup_cat:
+        plan = s * min(plan_c3d / sup_cat, 1.0)
+    elif front:
+        plan = min(s, front * max(k["banda_minima_m"], k["fondo_tipico_m"]))
+    else:
+        plan = s
+        r["alertas"].append("planta_sin_dato (se usó toda la superficie)")
+    env = envelope(s, plan, unit_h, limit_h, front, k)
+    r.update(pisos=env["pisos"], planta_edificable_m2=round(plan), eficiencia_planta=env["eficiencia"])
+    m2 = env["m2"]
+    if not m2:
         r["flags"] = "; ".join(flags)
         r["motivo_descarte"] = "parcela_sin_edificabilidad"
         return r.__setitem__("resultado", "gran_predio") if r["gran_predio"] else None
-    # Two scenarios; the one with the lower incidence is used (never lose an opportunity):
-    #   FOT       superficie x FOT of the parcel: what the City charges no plusvalía for
-    #   envelope  footprint x floors of the plano límite (Ciudad 3D's 'superficie edificable' when it gives it),
-    #             paying the plusvalía of the m2 above the FOT
     uva, inc_uva = c3d.uva(), _f(pv.get("incidencia_uva"))
     r["uva_ars"], r["incidencia_ley6062_uva"] = uva, inc_uva or None
-    key = {"medianera": "plusvalia_em", "semi libre": "plusvalia_sl", "perímetro libre": "plusvalia_pl"}[r["tipo_fot"]]
-    m2_fot = s * r["fot_usado"]
-    floors = math.floor(r["altura_max_m"] / k["altura_piso_m"] + 1e-9) if r["altura_max_m"] else 0
-    planta = min(_f(e.get("sup_edificable_planta")) or s, s) * k["ocupacion_planta"]
-    m2_env = _f(e.get("sup_max_edificable")) * s / (sup_cat or s) or planta * floors
-    r["m2_fot"], r["m2_envolvente"] = round(m2_fot), round(m2_env)
-    scenarios = [("FOT", m2_fot, 0.0)]
-    base_em = s * (options["medianera"] or r["fot_usado"])         # the envelope is built between party walls
-    if m2_env > max(m2_fot, base_em) * 1.05:
-        try:
-            plus = _f(c3d.plusvalia(p["smp"], m2_env).get("plusvalia_em"))
-        except RuntimeError as ex:
-            c3d.errors.append(f"plusvalía {p['smp']}: {ex}")
-            plus = 0.0
-        if not plus:       # the API gives 0 for some areas above the FOT: Ley 6062 formula, without reductions
-            plus = (m2_env - base_em) * inc_uva * _f(pv.get("alicuota"))
-            flags.append("plusvalia_estimada (fórmula Ley 6062 sin reducciones: verificar en Ciudad 3D)")
-        scenarios.append(("envolvente", m2_env, plus))
+    frac = k["plusvalia_fraccion_m2"]
+    if r["fot_usado"]:
+        r["m2_sin_plusvalia"] = round(r["fot_usado"] * s / frac)
+        plus_uva = max(0.0, frac * m2 - r["fot_usado"] * s) * inc_uva * _f(pv.get("alicuota"))
+    else:
+        plus_uva = 0.0
+        r["alertas"].append("sin_fot (plusvalía no calculada: verificar en Ciudad 3D)")
 
     def usd(uvas):
         return uvas * uva / mep if uva and mep else None
-
-    def inc(sc):
-        extra = usd(sc[2]) if sc[2] else 0.0
-        return (price + (extra or 0)) / sc[1]
-    name, m2, plus_uva = min(scenarios, key=inc)
-    r["escenario"] = name
     r["m2_construibles"], r["incidencia_usd_m2"] = round(m2), round(price / m2, 1)
     r["plusvalia_uva"] = round(plus_uva)
     r["plusvalia_usd"] = round(usd(plus_uva)) if usd(plus_uva) is not None else None
     if r["plusvalia_usd"] is not None or not plus_uva:
-        r["incidencia_total_usd_m2"] = round(inc((name, m2, plus_uva)), 1)
+        r["incidencia_total_usd_m2"] = round((price + (r["plusvalia_usd"] or 0)) / m2, 1)
     if inc_uva and usd(inc_uva):
         r["incidencia_referencia_usd_m2"] = round(usd(inc_uva), 1)
-    if name == "envolvente":
-        flags.append(f"envolvente_estimada ({floors} pisos x {k['ocupacion_planta']:g} de la planta; verificar en Ciudad 3D)")
     total = r.get("incidencia_total_usd_m2") or r["incidencia_usd_m2"]
     if r.get("incidencia_total_usd_m2") is None:
         r["alertas"].append("sin_plusvalia (UVA o dólar no disponibles: incidencia sin el derecho de desarrollo urbano)")
@@ -329,6 +340,74 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
         r["motivo_descarte"] = "incidencia_alta"
     if r["resultado"] == "descartado" and r["gran_predio"] and not r["proteccion"] in BLOCKING:
         r["resultado"], r["via"], r["motivo_descarte"] = "gran_predio", "gran_predio", ""
+
+
+def unit_height(e: dict) -> float:
+    """Height of the unit of edificabilidad over the L.O. (38, 31,2, 22,8, 17,2, 14,6, 12, 9 m)."""
+    return max(map(_f, e.get("unidad_edificabilidad") or e.get("altura_max") or [0]), default=0.0)
+
+
+def envelope(s: float, plan: float, unit_h: float, limit_h: float, front: float | None, k: dict) -> dict:
+    """Buildable m2 of the Código Urbanístico envelope, between party walls (arts. 6.2, 6.3 and 6.4.3).
+
+    floors     1 + floor((unit height - PB) / altura_piso_m): PB 3 m, or 2,60 m in the U.S.A.B. (14,6 m or less)
+    set-backs  where the plano límite is above the unit height (C.A., C.M., U.S.A.A., U.S.A.M.): one floor 2 m
+               shorter and one 8 m shorter (4 m if the lot only gives the 16 m minimum band)
+    basamento  C.A. and C.M.: PB and 1st floor go on from the L.F.I. to the L.I.B. (only with a known front)
+    efficiency patios and side urban space: 0,85 with a front up to 10 m, 0,75 wider
+    """
+    h = unit_h or limit_h
+    if not h or not plan:
+        return {"m2": 0.0, "pisos": "", "eficiencia": None}
+    pb = k["pb_baja_m"] if h <= k["altura_max_usab_m"] + 1e-6 else k["pb_alta_m"]
+    floors = 1 + math.floor((h - pb) / k["altura_piso_m"] + 1e-9) if h >= pb else 0
+    eff = k["eficiencia_planta_sin_frente"] if not front else \
+        k["eficiencia_planta_angosta"] if front <= k["frente_angosto_m"] else k["eficiencia_planta_ancha"]
+    net = plan * eff
+    m2, label = net * floors, f"PB+{floors - 1}"
+    if limit_h and limit_h > h + 0.5:
+        depth = plan / front if front else k["fondo_tipico_m"]
+        back = k["retiro_2_banda_minima_m"] if depth <= k["banda_minima_m"] + 0.5 else k["retiro_2_m"]
+        m2 += net * (max(0.0, depth - k["retiro_1_m"]) + max(0.0, depth - back)) / depth
+        label += " + 2 retiros"
+    if h >= k["altura_min_basamento_m"] and front:
+        extra = min(max(0.0, s - plan), front * k["fondo_basamento_m"])
+        if extra:
+            m2 += extra * eff * 2
+            label += " + basamento"
+    return {"m2": m2, "pisos": label, "eficiencia": eff}
+
+
+def extra_potential(r: dict, c3d: Ciudad3D, cfg: dict) -> None:
+    """Flag a hit whose side neighbours allow more than the envelope: a neighbour taller than the unit
+    (completamiento de tejido, art. 6.5.5; not in U.S.A.B. 0 nor in APH) or a neighbour in a taller unit
+    (lot next to a corner of a taller street, art. 6.4.6). Doesn't change the m2: Gonzalo checks it by hand."""
+    k = cfg["caba"]
+    e = c3d.cache["smp"].get(r.get("smp")) or {}
+    h = r.get("altura_unidad_m") or 0
+    neighbours = (e.get("parcelas_linderas") or {}).get("smp_linderas") or []
+    if not h or not neighbours:
+        return
+    can_complete = h > 9.0 + 1e-6 and "distrito_especial" not in (r.get("flags") or "")
+    found = []
+    for smp in neighbours:
+        if c3d.asked + 2 > c3d.c["max_consultas_por_corrida"]:
+            r["alertas"].append("linderos_sin_consultar (tope de consultas)")
+            break
+        try:
+            cat = c3d.parcel_by_smp(smp) or {}
+            floors = int(_f(cat.get("pisos_sobre_rasante")))
+            tall = k["pb_alta_m"] + floors * k["altura_piso_m"]       # catastro counts the floors above the PB
+            if can_complete and floors and tall > h + k["completamiento_diferencia_m"]:
+                found.append(f"lindero {smp} con PB+{floors} (~{tall:.0f} m; la unidad da {h:g} m)")
+            other = unit_height(c3d.buildable(smp))
+            if other > h + k["esquina_diferencia_m"]:
+                found.append(f"lindero {smp} en una unidad de {other:g} m (esquina, art. 6.4.6)")
+        except RuntimeError:
+            r["alertas"].append(f"lindero {smp} sin consultar")
+    if found:
+        r["potencial_extra"] = "potencial extra, revisar por completamiento y esquina: " + "; ".join(found)
+        r["flags"] = "; ".join(x for x in (r.get("flags"), r["potencial_extra"]) if x)
 
 
 ADDRESS = re.compile(r"^\s*(.*?[A-Za-zÁÉÍÓÚÑáéíóúñ.].*?)\s+(?:al\s+|n[°º]\s*)?(\d{1,5})\b", re.I)
@@ -369,9 +448,16 @@ def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> lis
             broken += 1
             r["resultado"], r["motivo_descarte"] = "descartado", f"error_evaluacion ({type(e).__name__})"
             c3d.errors.append(f"aviso {r.get('id')}: {type(e).__name__}: {str(e)[:120]}")
-        r["alertas"] = "; ".join(r["alertas"]) if isinstance(r["alertas"], list) else r["alertas"]
         if i % 100 == 0:
             c3d.save()                               # a crash later doesn't lose the API answers
+    for r in rows:                                   # after every listing: never takes queries from the main pass
+        if r["resultado"] in ("oportunidad", "casi", "gran_predio"):
+            try:
+                extra_potential(r, c3d, cfg)
+            except Exception as e:                   # noqa: BLE001 - a flag must never stop the run
+                r["alertas"].append(f"linderos_sin_revisar ({type(e).__name__})")
+    for r in rows:
+        r["alertas"] = "; ".join(r["alertas"]) if isinstance(r["alertas"], list) else r["alertas"]
     c3d.save()
     if health is not None:
         health.append(c3d.health())
@@ -400,8 +486,8 @@ def summary(n_raw: int, rows: list[dict], health: list[dict], cfg: dict) -> str:
 def _line(r: dict) -> str:
     rep = f" | x{r['cantidad_publicaciones']}" if r.get("cantidad_publicaciones", 1) > 1 else ""
     return (f"[{r['resultado'].upper()}] {r['titulo'][:55]} | {r['direccion']} | USD {r['precio_usd']:,.0f} | "
-            f"{r['superficie_m2']:.0f} m2 | SMP {r.get('smp')} {r.get('distrito_cpu')} FOT {r.get('fot_usado')} "
-            f"({r.get('tipo_fot')}) -> {r.get('m2_construibles')} m2c ({r.get('escenario')}) | inc {r.get('incidencia_usd_m2')} + plusvalía "
+            f"{r['superficie_m2']:.0f} m2 | SMP {r.get('smp')} {r.get('distrito_cpu')} {r.get('altura_unidad_m')} m "
+            f"{r.get('pisos')} -> {r.get('m2_construibles')} m2c | inc {r.get('incidencia_usd_m2')} + plusvalía "
             f"= {r.get('incidencia_total_usd_m2')} USD/m2c vs ref. {r.get('incidencia_referencia_usd_m2')} "
             f"(ratio {r.get('ratio_incidencia')}) | {r['flag_confianza']}{rep} | {r.get('flags') or ''} | {r['url']}")
 
@@ -418,7 +504,7 @@ def render(rows: list[dict], health: list[dict], n_raw: int, cfg: dict) -> tuple
     cols = [("Inmueble", lambda r: f"<a href='{html.escape(r['url'])}'>{html.escape(r['titulo'][:60])}</a><br>"
                                    f"<span style='color:#666'>{html.escape(r['direccion'] or '')} · SMP {r.get('smp')}</span>"),
             ("Precio USD", lambda r: _n(r["precio_usd"])), ("m² terreno", lambda r: _n(r["superficie_m2"])),
-            ("Distrito / FOT", lambda r: f"{r.get('distrito_cpu')} · {r.get('fot_usado')} ({r.get('tipo_fot')})"),
+            ("Unidad / pisos", lambda r: f"{r.get('altura_unidad_m')} m · {r.get('pisos')}"),
             ("m² construibles", lambda r: _n(r.get("m2_construibles"))),
             ("Plusvalía USD", lambda r: _n(r.get("plusvalia_usd"))),
             ("Incidencia c/plusvalía", lambda r: _n(r.get("incidencia_total_usd_m2"))),
