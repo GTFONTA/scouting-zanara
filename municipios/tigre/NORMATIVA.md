@@ -1,5 +1,7 @@
 # Tigre — normativa y decisiones a validar
 
+> **Normativa completa y método de cálculo:** ver [GUIA_NORMATIVA.md](GUIA_NORMATIVA.md). Desde el 19/11/2026 las planillas de tigre.gob.ar corrigen a UrbaSIG (`PARTIDOS['tigre']['planillas']` en `tools/municipio_pba.py`), y rigen las alturas de la **Ord. 4448/26** por sector (`alturas_4448.yaml`), el tope por densidad de 30 m²/hab y la señal de proyecto aprobado. Donde este archivo diga otra cosa, vale la guía.
+
 **Fuente:** UrbaSIG de la Provincia (`urbasig:_zonificacion`, partido 057), capa con fecha 09-2022. La base es el Código de Zonificación (Ord. 1894/96 y 1996/97), con modificaciones por las Ord. 1297/92, 3564/17 y 3776/21. Lo baja `python tools/municipio_pba.py tigre`, que genera `zonas.geojson`, `normativa_zonas.csv`, `localidades.geojson` y `calles.geojson`.
 
 **Tipo B** (capa vectorial con indicadores): no hizo falta vectorizar un plano.

@@ -61,6 +61,31 @@ PARTIDOS = {
         # never housing as a product: barrios cerrados and clubes de campo already subdivided, parks, special uses
         "cloaca": ["C1", "C2", "C3", "C4"],      # multifamiliar needs water and sewers (observation of the zone)
         "sin_vivienda": ["CC", "R1a", "R1b", "R3b", "PR", "PU", "PT", "PA", "UE", "P"],
+        # Gonzalo, 19/11/2026: the official zone sheets of tigre.gob.ar ("Planillas de indicadores urbanísticos",
+        # municipios/tigre/GUIA_NORMATIVA.md) override UrbaSIG. Designation prefix -> columns (first match wins).
+        #   C1-C4: FOT with water and sewers; density 150 without them, 2.000 with them (C3: 800)
+        #   C2 and TC: the residential FOT is 2,5 (3,0 is for the commercial use); premios x1,5 like the others
+        #   R1u: multifamiliar on lots from 600 m2 (productos.multifamiliar_sup_min), one dwelling every 300 m2,
+        #        with water and sewers (Ord. 3749/20)
+        #   R2, R3, R5: multifamiliar with water and sewers, density 400 (12 m with free ground floor, Dec. 1000/16)
+        #   R4: density 400 (UrbaSIG says 140)
+        "planillas": [
+            ("C1", {"fot": 2.4, "fot_max": 3.6, "densidad_neta": 150, "densidad_neta_potencial": 2000}),
+            ("C2", {"fot": 2.5, "fot_max": 3.75, "densidad_neta": 150, "densidad_neta_potencial": 2000}),
+            ("C3", {"fot": 2.4, "fot_max": 3.6, "densidad_neta": 150, "densidad_neta_potencial": 800}),
+            ("C4", {"fot": 2.4, "fot_max": 3.6, "densidad_neta": 150, "densidad_neta_potencial": 2000}),
+            ("TC", {"fot": 2.5, "fot_max": 3.75}),
+            ("R4", {"densidad_neta": 400}),        # planilla: 400 hab/ha (UrbaSIG dice 140)
+            ("R1u", {"multifamiliar": "Sí", "m2_terreno_por_unidad": 300,
+                     "regla_unidades": "N = sup/300 (multifamiliar con agua y cloaca, Ord. 3749/20)",
+                     "flags+": "requiere_cloaca_multifamiliar"}),
+            ("R2", {"multifamiliar": "Sí", "densidad_neta": 140, "densidad_neta_potencial": 400,
+                    "regla_unidades": "Densidad neta de la zona (multifamiliar)", "flags+": "requiere_cloaca_multifamiliar"}),
+            ("R3", {"multifamiliar": "Sí", "densidad_neta": 140, "densidad_neta_potencial": 400,
+                    "regla_unidades": "Densidad neta de la zona (multifamiliar)", "flags+": "requiere_cloaca_multifamiliar"}),
+            ("R5", {"multifamiliar": "Sí", "densidad_neta": 140, "densidad_neta_potencial": 400,
+                    "regla_unidades": "Densidad neta de la zona (multifamiliar)", "flags+": "requiere_cloaca_multifamiliar"}),
+        ],
     },
     "san_fernando": {
         "codigo": "096", "osm": 2443418,
@@ -138,7 +163,7 @@ def zone_row(name: str, props: list[dict], conf: dict) -> dict:
     else:
         rule = "Unifamiliar por parcela"
     ords = " ".join(x for x in (p.get("ord_ma"), p.get("ord_mod"), p.get("dec_mod")) if x)
-    return {
+    row = {
         "zona": name, "grupo": (p.get("descripcio") or "").strip().title(),
         "relevancia": "Nula" if not housing else "Alta" if multi == "Sí" else "Media",
         "fot": _num(fot) if housing else "", "fot_max": _num(prem) if prem > fot else "", "fos": _num(_f(p["fos"])),
@@ -154,6 +179,17 @@ def zone_row(name: str, props: list[dict], conf: dict) -> dict:
         "notas": " | ".join(x for x in (obs, f"premios Art. 47: FOT {prem:g}, densidad {_f(p.get('denp_prem')):g}"
                                         if prem > fot else "", p.get("des_cat") or "") if x),
     }
+    fix = next((cols for pre, cols in conf.get("planillas", []) if name.startswith(pre)), None) if housing else None
+    if fix:
+        for col, value in fix.items():
+            if col == "flags+":
+                row["flags"] = ";".join(dict.fromkeys(x for x in row["flags"].split(";") + [value] if x))
+            else:
+                row[col] = _num(value) if isinstance(value, (int, float)) else value
+        if row["multifamiliar"] == "Sí":
+            row["relevancia"] = "Alta"
+        row["fuente"] += " + planilla tigre.gob.ar (19/11/2026)"
+    return row
 
 
 def main(slug: str, only_normativa: bool = False) -> None:

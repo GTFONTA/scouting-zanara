@@ -69,13 +69,58 @@ def test_tigre_central_zone_is_a_multifamiliar_hit(monkeypatch, tmp_path):
                            cfg, [], [])
     hit, outside = rows
     assert hit["resultado"] == "oportunidad" and "multifamiliar" in hit["via"]
-    assert hit["fot_usado"] == 4.5 and hit["m2_construibles"] == 5400      # premio Art. 47: 1.200 >= 2 x 300 m2
+    # residential FOT of C2 is 2,5 (planilla, Gonzalo 19/11/2026); premio x1,5 because 1.200 >= 2 x 300 m2.
+    # General Pacheco, C2a sector of Av. Henry Ford / Constituyentes: Ord. 4448 PB+6 -> 0,6 x 7 = 4,2 doesn't cut it
+    assert hit["fot_usado"] == 3.75 and hit["fot_efectivo"] == 3.75 and hit["m2_construibles"] == 4500
+    assert "condiciones_ord_4448 (accesos solo por la avenida; 30% absorbente)" in hit["alertas"]
     assert "premio_ley_8912_aplicado" in hit["flags"]
     assert hit["requiere_cloaca"] and "requiere_cloaca_para_max" in hit["flags"]    # C1-C4: Gonzalo, 14/11
     assert "requiere_cloaca_multifamiliar" not in hit["flags"]
     assert outside["motivo_descarte"] == "fuera_del_partido"
     small = main.process({"zonaprop": _zonaprop_items([(lat, lon, 500, 300000)])}, cfg, [], [])[0][0]
-    assert small["fot_usado"] == 3.0 and "premio_ley_8912_aplicado" not in small["flags"]   # 500 < 2 parcelas
+    assert small["fot_usado"] == 2.5 and "premio_ley_8912_aplicado" not in small["flags"]   # 500 < 2 parcelas
+
+
+def _tigre_row(monkeypatch, tmp_path, lat, lon, s, price, text=""):
+    harness.offline(monkeypatch, tmp_path)
+    from src import main
+    cfg = load_config("tigre")
+    cfg["productos"]["catastro"]["max_consultas_por_corrida"] = 0
+    items = _zonaprop_items([(lat, lon, s, price)])
+    items[0]["descriptionNormalized"] = text
+    return main.process({"zonaprop": items}, cfg, [], [])[0][0]
+
+
+def test_tigre_height_sector_of_ord_4448_cuts_the_premio(monkeypatch, tmp_path):
+    """R6 in sector 2-R6-PB4-10 (Av. Italia, Montes de Oca, Tren de la Costa, Brandsen): PB+4 -> 0,6 x 5 = 3,0
+    instead of the premio's 3,6 (2.000 m2 >= 2 x 800 m2)."""
+    r = _tigre_row(monkeypatch, tmp_path, -34.423447396218094, -58.57337838275734, 2000, 500000)
+    assert r["zona_fot_usado"] == "R6" and r["fot_usado"] == 3.6
+    assert r["fot_efectivo"] == 3.0 and r["m2_construibles"] == 6000
+    assert "PB+4 (sector 2-R6-PB4-10" in r["limite_fot"]
+
+
+def test_tigre_density_caps_c5(monkeypatch, tmp_path):
+    """C5 (FOT 1,8, 400 hab/ha): 400 x 30 m2/hab / 10.000 = 1,2 (Gonzalo, 19/11/2026: 30 m2 per inhabitant)."""
+    lat, lon = _point_in_zone("tigre", "C5")
+    r = _tigre_row(monkeypatch, tmp_path, lat, lon, 2000, 300000, "Lote con proyecto aprobado y planos")
+    assert r["zona_fot_usado"] == "C5" and r["fot_usado"] == 1.8
+    assert r["fot_efectivo"] == 1.2 and r["m2_construibles"] == 2400 and "densidad 400" in r["limite_fot"]
+    assert "proyecto_aprobado_previo" in r["flags"]                    # Ord. 4448 art. 17.1
+
+
+def test_tigre_r2_r3_r5_multifamiliar_with_sewers():
+    """Planillas (Gonzalo, 19/11/2026): R2, R3 and R5 admit multifamiliar with water and sewers, 400 hab/ha."""
+    from src.evaluate import multifamiliar, units
+    tigre = _normativa("tigre")
+    p = load_config("tigre")["productos"]
+    for z in ("R2a", "R2c", "R3a", "R5"):
+        assert multifamiliar(tigre[z], 1500, p) == "Sí" and "requiere_cloaca_multifamiliar" in tigre[z]["flags"]
+        u = units(tigre[z], 2000, None, p)
+        assert u["multifamiliar_unidades"] == 20 and u["requiere_cloaca"]        # 400 hab/ha x 0,2 ha / 4
+    assert multifamiliar(tigre["R1u"], 599, p) == "No" and multifamiliar(tigre["R1u"], 600, p) == "Sí"
+    assert units(tigre["R1u"], 900, None, p)["multifamiliar_unidades"] == 3       # 1 vivienda cada 300 m2
+    assert {tigre[z]["fot"] for z in ("C2a", "C2b", "TC")} == {"2.5"}
 
 
 def _normativa(slug):
@@ -93,7 +138,7 @@ def test_multifamiliar_decisions_of_gonzalo():
     assert "requiere_cloaca" not in tigre["C5"]["flags"]
     assert multifamiliar(tigre["R4"], 999, p) == "No" and multifamiliar(tigre["R4"], 1000, p) == "Sí"
     assert units(tigre["R4"], 800, None, p)["multifamiliar_unidades"] is None
-    assert units(tigre["R4"], 2000, None, p)["multifamiliar_unidades"] == 7          # 140 hab/ha x 0,2 ha / 4
+    assert units(tigre["R4"], 2000, None, p)["multifamiliar_unidades"] == 20         # 400 hab/ha x 0,2 ha / 4 (planilla)
     assert {sf[z]["multifamiliar"] for z in ("C3", "C3A")} == {"Sí"}
     assert {sf[z]["multifamiliar"] for z in ("R3", "R3A", "R3B", "R4")} == {"No"}
 

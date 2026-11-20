@@ -1,0 +1,126 @@
+# Ordenanza 4448/26 de Tigre (promulgada el 05/05/2026, Boletín Oficial 1065): límites de altura por sector,
+# arts. 2 a 11. Transcripción a mano del texto (prevalece sobre la cartografía, art. 1).
+# Gonzalo, 19/11/2026: cargar los sectores calle por calle. tools/alturas_4448.py arma los polígonos con las calles,
+# ríos y vías de OpenStreetMap y escribe alturas_4448.geojson; el motor usa ese archivo.
+#
+#   zona       designación de UrbaSIG a la que se aplica (R4 bis / R4 ter / R5 bis son sectores de R4 / R5)
+#   pb         N de "PB + N"
+#   tipo       frentista: parcelas frentistas a `calle` entre `desde` y `hasta` (sin límites: toda la calle en la
+#                         localidad)
+#              area:      polígono cerrado por `limites`
+#              manual:    límites por nomenclatura catastral u otros que no se pueden armar con OSM; el motor usa
+#                         la altura máxima de la zona en la localidad (no pierde oportunidades) y lo avisa
+#   sin_multifamiliar  la ordenanza prohíbe edificios multifamiliares de media o alta densidad en el sector
+#   condiciones        exigencias del sector (art. 12): se informan como flag
+# Nombres: los de la ordenanza, simplificados para que coincidan con OSM ("ffcc mitre", "tren de la costa",
+# "rio tigre", "rio reconquista", "canal central", etc.).
+
+# ---------------------------------------------------------------- art. 2, localidad de Tigre
+- {art: 2, localidad: Tigre, zona: R1u, pb: 3, tipo: frentista, calle: Libertador General San Martin, desde: rio reconquista, hasta: rio tigre, condiciones: "estudio hidráulico; 40% absorbente"}
+- {art: 2, localidad: Tigre, zona: R1u, pb: 3, tipo: area, limites: [Libertador General San Martin, rio tigre, Acceso Norte Ramal Tigre, Santiago de Liniers, rio reconquista], condiciones: "estudio hidráulico; 40% absorbente"}
+- {art: 2, localidad: Tigre, zona: R4, pb: 2, tipo: area, limites: [rio tigre, rio lujan, rio reconquista, Jose C Paz, Libertador General San Martin]}
+- {art: 2, localidad: Tigre, zona: R4, pb: 3, tipo: frentista, calle: Lavalle, nota: "R4 bis, corredor Victorica"}
+- {art: 2, localidad: Tigre, zona: R4, pb: 3, tipo: frentista, calle: Paseo Victorica, nota: "R4 bis, corredor Victorica"}
+- {art: 2, localidad: Tigre, zona: R4, pb: 3, tipo: frentista, calle: Pirovano, desde: Paseo Victorica, hasta: Saldias, nota: "R4 bis, corredor Victorica"}
+- {art: 2, localidad: Tigre, zona: R4, pb: 3, tipo: frentista, calle: Saldias, desde: Pirovano, hasta: Santiago de Liniers, nota: "R4 bis, corredor Victorica"}
+- {art: 2, localidad: Tigre, zona: R4, pb: 4, tipo: frentista, calle: Santiago de Liniers, desde: Saldias, hasta: Libertador General San Martin, nota: "R4 ter"}
+- {art: 2, localidad: Tigre, zona: R4, pb: 4, tipo: frentista, calle: Libertador General San Martin, desde: rio reconquista, hasta: rio tigre, nota: "R4 ter"}
+- {art: 2, localidad: Tigre, zona: R6, pb: 4, tipo: area, limites: [Avenida Italia, Montes de Oca, tren de la costa, Brandsen]}
+- {art: 2, localidad: Tigre, zona: R6, pb: 4, tipo: area, limites: [Dardo Rocha, Bourdieu, ffcc mitre, Almirante Brown, Uruguay, Paso]}
+- {art: 2, localidad: Tigre, zona: R6, pb: 6, tipo: frentista, calle: Dardo Rocha, desde: Bourdieu, hasta: Paso, nota: "margen Norte"}
+- {art: 2, localidad: Tigre, zona: R6, pb: 10, tipo: area, limites: [Coronel Morales, Mitre, Vivanco, Montes de Oca], condiciones: "estudio de impacto vial; cocheras"}
+- {art: 2, localidad: Tigre, zona: R6, pb: 10, tipo: area, limites: [Avenida Italia, Mitre, Coronel Morales, Montes de Oca], condiciones: "estudio de impacto vial; cocheras"}
+- {art: 2, localidad: Tigre, zona: R8, pb: 3, tipo: manual, limites: [Luis Pereyra, arroyo rosquete, rio lujan, ffcc mitre]}
+- {art: 2, localidad: Tigre, zona: TC, pb: 8, tipo: area, limites: [Montes de Oca, Avenida Italia, Sarmiento, Cazon], condiciones: "retiro de frente; cocheras"}
+- {art: 2, localidad: Tigre, zona: TC, pb: 8, tipo: frentista, calle: Cazon, desde: Montes de Oca, hasta: Marabotto, condiciones: "retiro de frente; cocheras"}
+- {art: 2, localidad: Tigre, zona: TC, pb: 8, tipo: frentista, calle: Avenida Italia, desde: Montes de Oca, hasta: Marabotto, condiciones: "retiro de frente; cocheras"}
+- {art: 2, localidad: Tigre, zona: TC, pb: 10, tipo: frentista, calle: Almirante Brown, desde: Cazon, hasta: Avenida Italia, condiciones: "retiro de frente; cocheras"}
+- {art: 2, localidad: Tigre, zona: TC, pb: 10, tipo: frentista, calle: Cazon, desde: Ruperto Mazza, hasta: Almirante Brown, condiciones: "retiro de frente; cocheras"}
+- {art: 2, localidad: Tigre, zona: TC, pb: 10, tipo: frentista, calle: Avenida Italia, desde: Ruperto Mazza, hasta: Almirante Brown, condiciones: "retiro de frente; cocheras"}
+- {art: 2, localidad: Tigre, zona: TC, pb: 10, tipo: frentista, calle: Avenida Italia, desde: Mitre, hasta: Montes de Oca, condiciones: "retiro de frente; cocheras"}
+- {art: 2, localidad: Tigre, zona: Tr, pb: 4, tipo: area, limites: [rio tigre, Coronel Morales, Mitre, Enciso, Luis Garcia, Dardo Rocha]}
+- {art: 2, localidad: Tigre, zona: Tr, pb: 6, tipo: area, limites: [Montes de Oca, Cazon, Marabotto, ffcc mitre]}
+- {art: 2, localidad: Tigre, zona: Tr, pb: 6, tipo: area, limites: [Cazon, Guareschi, Avenida Italia, Marabotto]}
+- {art: 2, localidad: Tigre, zona: Tr, pb: 8, tipo: area, limites: [Sarmiento, Avenida Italia, Guareschi, Cazon]}
+- {art: 2, localidad: Tigre, zona: Tr, pb: 10, tipo: area, limites: [Avenida Italia, Montes de Oca, Enciso, Mitre]}
+- {art: 2, localidad: Tigre, zona: Tr, pb: 10, tipo: area, limites: [ffcc mitre, Bourdieu, Dardo Rocha, Luis Garcia]}
+- {art: 2, localidad: Tigre, zona: C4a, pb: 12, tipo: frentista, calle: Luis Garcia, desde: Chile, hasta: Santa Maria de las Conchas, nota: "margen Oeste"}
+- {art: 2, localidad: Tigre, zona: C4a, pb: 12, tipo: frentista, calle: Santa Maria de las Conchas, desde: Luis Garcia, hasta: rio reconquista}
+- {art: 2, localidad: Tigre, zona: C6, pb: 3, tipo: manual, limites: [rio lujan, Luis Pereyra, San Juan, Guareschi]}
+- {art: 2, localidad: Tigre, zona: C7, pb: 6, tipo: manual, nota: "colectoras Oeste (Ruta 197 a Pueyrredón) y Este (Ruta 197 a Sarmiento) del Acceso Norte Ramal Tigre; la Ruta 197 no está en la localidad en OSM"}
+- {art: 2, localidad: Tigre, zona: C7, pb: 10, tipo: frentista, calle: Luis Garcia, desde: Sarmiento, hasta: Dardo Rocha, nota: "colectora Este / Av. Luis García"}
+
+# ---------------------------------------------------------------- art. 3, Rincón de Milberg
+- {art: 3, localidad: Rincon de Milberg, zona: C4c, pb: 5, tipo: area, limites: [Milberg, Aristobulo del Valle, 9 de Julio, Guemes]}
+- {art: 3, localidad: Rincon de Milberg, zona: C4c, pb: 5, tipo: frentista, calle: Santa Maria de las Conchas, desde: Williams, hasta: Milberg}
+- {art: 3, localidad: Rincon de Milberg, zona: C4c, pb: 6, tipo: frentista, calle: Santa Maria de las Conchas, desde: Toscanelli, hasta: Williams}
+- {art: 3, localidad: Rincon de Milberg, zona: C5, pb: 6, tipo: frentista, calle: Santa Maria de las Conchas, desde: Toscanelli, hasta: Pasaje de las Ciencias}
+- {art: 3, localidad: Rincon de Milberg, zona: R5, pb: 2, tipo: area, limites: [Jose Marti, Aristobulo del Valle, Rivadavia, rio reconquista], nota: "R5 bis"}
+- {art: 3, localidad: Rincon de Milberg, zona: R7, pb: 2, tipo: manual, nota: "límites por parcelas y Camino de los Remeros"}
+- {art: 3, localidad: Rincon de Milberg, zona: R7, pb: 6, tipo: manual, nota: "Camino de los Remeros, proyección Williams, Canal Aliviador y parcelas"}
+- {art: 3, localidad: Rincon de Milberg, zona: R7, pb: 6, tipo: area, limites: [Williams, Laprida, Castiglioni, Camino de los Remeros]}
+- {art: 3, localidad: Rincon de Milberg, zona: RM1, pb: 2, tipo: manual, nota: "tres áreas sobre el Río Luján, límites por parcelas"}
+- {art: 3, localidad: Rincon de Milberg, zona: RM1, pb: 3, tipo: manual, nota: "cinco áreas sobre la RP 27, límites por parcelas (sin frentistas a la RP 27)"}
+- {art: 3, localidad: Rincon de Milberg, zona: RM1, pb: 6, tipo: manual, nota: "Av. Agustín M. García, límite zona UE, Los Lirios, Barrio Altamira"}
+
+# ---------------------------------------------------------------- art. 4, Benavídez
+- {art: 4, localidad: Benavidez, zona: C1, pb: 5, tipo: frentista, calle: Juan Domingo Peron, desde: Sarmiento, hasta: arroyo el claro}
+- {art: 4, localidad: Benavidez, zona: C4a, pb: 5, tipo: manual, nota: "Colectora Este Panamericana Ramal Escobar, de Belgrano a Perón (la colectora está cortada en OSM)"}
+- {art: 4, localidad: Benavidez, zona: C4a, pb: 8, tipo: manual, nota: "Colectora Este Panamericana Ramal Escobar, de Perón a Sarmiento (la colectora está cortada en OSM)"}
+- {art: 4, localidad: Benavidez, zona: C4b, pb: 5, tipo: frentista, calle: Juan Domingo Peron, desde: arroyo el claro, hasta: Avenida Benavidez}
+- {art: 4, localidad: Benavidez, zona: C4b, pb: 5, tipo: frentista, calle: Chilavert, desde: Juan Domingo Peron, hasta: Los Andes}
+- {art: 4, localidad: Benavidez, zona: C4b, pb: 5, tipo: area, limites: [Avenida Marabotto, Belgrano, General Pacheco, San Luis, San Martin]}
+- {art: 4, localidad: Benavidez, zona: C4b, pb: 6, tipo: frentista, calle: Juan Domingo Peron, desde: Colectora Panamericana, hasta: Avenida Benavidez, nota: "desde la colectora hasta Gutiérrez ambos márgenes; margen Sur hasta Av. Benavídez"}
+- {art: 4, localidad: Benavidez, zona: C4b, pb: 6, tipo: frentista, calle: Avenida Benavidez, desde: Juan Domingo Peron, hasta: General Pacheco, nota: "margen Sur"}
+- {art: 4, localidad: Benavidez, zona: C5, pb: 6, tipo: frentista, calle: Avenida Benavidez, desde: Dean Funes, hasta: Aristobulo del Valle}
+- {art: 4, localidad: Benavidez, zona: C5, pb: 6, tipo: frentista, calle: Agustin M Garcia, nota: "Av. Agustín García (RP 27), desde el límite con Nordelta hasta el Arroyo El Claro"}
+- {art: 4, localidad: Benavidez, zona: RM1, pb: 2, tipo: frentista, calle: Avenida Italia, desde: Agustin M Garcia, hasta: Boulevard de Todos los Santos}
+- {art: 4, localidad: Benavidez, zona: RM1, pb: 3, tipo: manual, nota: "nueve áreas entre el Río Luján, el Canal Central, Av. Italia y Av. Benavídez (sin frentistas)"}
+- {art: 4, localidad: Benavidez, zona: RM1, pb: 4, tipo: manual, nota: "dos áreas sobre la RP 27, límites por parcelas"}
+- {art: 4, localidad: Benavidez, zona: RM1, pb: 6, tipo: frentista, calle: Dean Funes, desde: Avenida Benavidez}
+- {art: 4, localidad: Benavidez, zona: R3b, pb: 5, tipo: area, limites: [Alvear, Marabotto, San Martin, Brasil]}
+
+# ---------------------------------------------------------------- art. 5, Dique Luján: todo PB+3 (alcanza la máxima de la zona)
+- {art: 5, localidad: Dique Lujan, zona: C1, pb: 3, tipo: manual, nota: "Canal Villanueva, Beruti, Roca, Luis María Campos"}
+- {art: 5, localidad: Dique Lujan, zona: C3, pb: 3, tipo: manual, nota: "frentistas a 12 de Octubre y 9 de Julio"}
+- {art: 5, localidad: Dique Lujan, zona: RM1, pb: 3, tipo: manual}
+- {art: 5, localidad: Dique Lujan, zona: R2g, pb: 3, tipo: manual}
+
+# ---------------------------------------------------------------- art. 6, Ricardo Rojas
+- {art: 6, localidad: Ricardo Rojas, zona: C1, pb: 4, tipo: manual, nota: "Henry Ford, Albarellos, Ricardo Gutiérrez y Colectora Este (Albarellos no está en la localidad en OSM)"}
+- {art: 6, localidad: Ricardo Rojas, zona: C1, pb: 5, tipo: frentista, calle: Marcos Sastre, desde: Coronel Vilela, hasta: Carlos Pellegrini}
+- {art: 6, localidad: Ricardo Rojas, zona: C4a, pb: 4, tipo: manual, nota: "frentistas a Henry Ford entre Albarellos y la Colectora Este (única altura de C4a en la localidad)"}
+- {art: 6, localidad: Ricardo Rojas, zona: C4b, pb: 5, tipo: frentista, calle: Coronel Vilela, desde: Colectora Este, hasta: Quintana}
+- {art: 6, localidad: Ricardo Rojas, zona: C4b, pb: 8, tipo: manual, nota: "Quintana, José Romero, Paul Groussac y Cnel. Vilela (José Romero ambiguo en OSM)"}
+
+# ---------------------------------------------------------------- art. 7, General Pacheco (una altura por zona)
+- {art: 7, localidad: General Pacheco, zona: C1, pb: 6, tipo: frentista, calle: Avenida de los Constituyentes, desde: Sans Souci, hasta: Buenos Aires, condiciones: "cocheras; retiro de frente; estudio de impacto vial"}
+- {art: 7, localidad: General Pacheco, zona: C2a, pb: 6, tipo: frentista, calle: Henry Ford, desde: Paul Groussac, hasta: Juan Domingo Peron, condiciones: "accesos solo por la avenida; 30% absorbente"}
+- {art: 7, localidad: General Pacheco, zona: C2a, pb: 6, tipo: frentista, calle: Avenida de los Constituyentes, desde: Juan Domingo Peron, hasta: arroyo las tunas, condiciones: "accesos solo por la avenida; 30% absorbente"}
+- {art: 7, localidad: General Pacheco, zona: C2b, pb: 6, tipo: frentista, calle: Hipolito Yrigoyen, desde: Sarmiento, hasta: ffcc mitre, condiciones: "cocheras; estudio de capacidad de redes"}
+- {art: 7, localidad: General Pacheco, zona: C4a, pb: 5, tipo: frentista, calle: Boulogne Sur Mer, desde: Hipolito Yrigoyen, hasta: ffcc mitre, condiciones: "cocheras; sin medianeras ciegas hacia tejido bajo"}
+- {art: 7, localidad: General Pacheco, zona: R2c, pb: 2, tipo: area, limites: [Boulogne Sur Mer, O'Higgins, Yapeyu, San Martin de Tours], sin_multifamiliar: true}
+- {art: 7, localidad: General Pacheco, zona: R2d, pb: 2, tipo: manual, sin_multifamiliar: true, nota: "Boulogne Sur Mer, Vélez Sarsfield, límite de El Chasqui y RP 24"}
+- {art: 7, localidad: General Pacheco, zona: C4b, pb: 8, tipo: area, limites: [Avenida de los Constituyentes, arroyo las tunas, ffcc mitre], condiciones: "estudio hidráulico; 40% absorbente"}
+
+# ---------------------------------------------------------------- art. 8, El Talar
+- {art: 8, localidad: El Talar, zona: C1, pb: 5, tipo: frentista, calle: San Martin, desde: General Pacheco, hasta: Isla Soledad, condiciones: "cocheras; PB+3 de transición en calles paralelas"}
+- {art: 8, localidad: El Talar, zona: C2b, pb: 6, tipo: frentista, calle: Hipolito Yrigoyen, desde: Colombia, hasta: Colectora Este, condiciones: "cocheras; estudio de impacto vial"}
+- {art: 8, localidad: El Talar, zona: C2b, pb: 6, tipo: frentista, calle: Hipolito Yrigoyen, desde: ffcc mitre, hasta: Francia, condiciones: "cocheras; estudio de impacto vial"}
+- {art: 8, localidad: El Talar, zona: C4a, pb: 5, tipo: frentista, calle: La Paloma, desde: El Pensamiento, hasta: 25 de Mayo}
+- {art: 8, localidad: El Talar, zona: C4a, pb: 5, tipo: frentista, calle: Paul Groussac, desde: 25 de Mayo, hasta: Hipolito Yrigoyen}
+- {art: 8, localidad: El Talar, zona: C4a, pb: 5, tipo: frentista, calle: Las Dalias, desde: Juan Manuel de Rosas, hasta: Juan Jose Valle}
+
+# ---------------------------------------------------------------- art. 9, Troncos del Talar
+- {art: 9, localidad: Troncos del Talar, zona: C3, pb: 6, tipo: frentista, calle: Hipolito Yrigoyen, desde: Escalada, hasta: Santiago de Liniers, nota: "Av. Intendente Victoriano M. de Alegría (RP 24)", condiciones: "cocheras; estudio de impacto vial"}
+- {art: 9, localidad: Troncos del Talar, zona: C4a, pb: 5, tipo: frentista, calle: Independencia, desde: Hipolito Yrigoyen, hasta: Almirante Brown}
+
+# ---------------------------------------------------------------- art. 10, Don Torcuato (todo PB+5)
+- {art: 10, localidad: Don Torcuato, zona: C1, pb: 5, tipo: manual, nota: "frentistas al Acceso Norte (Ruta 9) entre Belgrano y Lugones, y Lugones hasta Laplace"}
+- {art: 10, localidad: Don Torcuato, zona: C2a, pb: 5, tipo: manual, nota: "Boulogne Sur Mer, Triunvirato y Av. Ángel T. de Alvear", condiciones: "cocheras; PB+3 de transición"}
+- {art: 10, localidad: Don Torcuato, zona: C2b, pb: 5, tipo: manual, nota: "Av. Ángel T. de Alvear (RP 23)", condiciones: "cocheras"}
+- {art: 10, localidad: Don Torcuato, zona: C4a, pb: 5, tipo: manual, nota: "Av. del Trabajo entre Suiza e Italia"}
+- {art: 10, localidad: Don Torcuato, zona: R2g, pb: 5, tipo: manual, nota: "Boulogne Sur Mer, Av. Ángel T. de Alvear y Colectora Oeste Ramal Pilar"}
+
+# ---------------------------------------------------------------- art. 11, Nordelta
+- {art: 11, localidad: Nordelta, zona: C5, pb: 6, tipo: manual, nota: "frentistas a la RP 27 hasta Pasaje de las Ciencias", condiciones: "estudio de impacto vial y ambiental; cocheras"}

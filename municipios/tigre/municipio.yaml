@@ -15,8 +15,10 @@ criterio:                          # Gonzalo, 14/11/2026: más bajos que San Isi
 productos:
   normativa_csv: municipios/tigre/normativa_zonas.csv
   alias_zonas!: {}
-  multifamiliar_sup_min:           # Gonzalo, 14/11/2026: R4 admite multifamiliar en terrenos de más de 1.000 m²
-    R4: 1000
+  multifamiliar_sup_min:           # planillas de tigre.gob.ar (Gonzalo, 19/11/2026: valen sobre el Decreto 165/08)
+    R4: 1000                       # multifamiliar en terrenos de 1.000 m² o más
+    R1u: 600                       # multifamiliar en terrenos de 600 m² o más, 1 vivienda cada 300 m² (Ord. 3749/20)
+  m2_por_habitante: 30             # Gonzalo, 19/11/2026: la densidad limita los m² (2 personas por dormitorio, art. 13)
   premio_ley_8912:                 # Gonzalo, 14/11/2026: usar los premios del Art. 47 cuando sea factible aplicarlos
     parcelas_min: 2                # lote de al menos 2 parcelas mínimas (y 2 frentes mínimos si se conoce el frente)
   comparables:
@@ -39,13 +41,19 @@ productos:
       premio_ley_8912_aplicado: "FOT con premios máximos del Art. 47 Ley 8912 (ancho de parcela, perímetro libre, retiros): verificar"
       ver_observacion_zona: "la zona tiene observaciones en UrbaSIG: ver normativa_zonas.csv"
       dos_frentes: "esquina o doble frente: más frente a la calle que el informado"
+      proyecto_aprobado_previo: "Ord. 4448/26 art. 17.1: un expediente anterior al 05/11/2025 o una factibilidad otorgada conservan la norma anterior (más altura): verificar"
+    patrones_texto:                # Gonzalo, 19/11/2026: señal a partir del texto del aviso
+      proyecto_aprobado_previo: "proyecto aprobado|planos? (municipales )?aprobados?|(pre)?factibilidad|permiso de obra|proyecto con aprobaci|aprobaci[oó]n municipal"
 
 zonificacion:
   zonas_geojson: municipios/tigre/zonas.geojson
   barrios_geojson: municipios/tigre/localidades.geojson
   calles_geojson: municipios/tigre/calles.geojson
-  fot_max: 4.5                     # C2a, C2b, TC con premios del Art. 47 (sin premios: 3.0)
-  superficie_min_prefiltro: 288.9  # = 1300 / 4.5
+  fot_max: 3.75                    # C2a, C2b, TC con premios (FOT residencial 2,5 de las planillas)
+  superficie_min_prefiltro: 346.7  # = 1300 / 3.75
+  # Ord. 4448/26 (alturas por sector): municipios/tigre/alturas_4448.yaml, polígonos de tools/alturas_4448.py
+  alturas_yaml: municipios/tigre/alturas_4448.yaml
+  alturas_geojson: municipios/tigre/alturas_4448.geojson
 
 portales:
   zonaprop:

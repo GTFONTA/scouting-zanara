@@ -70,8 +70,12 @@ def flags(r: dict, normativa: dict, cfg: dict) -> list[str]:
         out.append("lindero_zona_c_o_i")
     if r.get("flag_confianza") in ("exacta", "geocodificada") and _two_zones(r, normativa, f["distancia_borde_zona_m"]):
         out.append("borde_de_zona")
-    if TWO_FRONTS.search(f"{r.get('titulo') or ''} {r.get('descripcion') or ''}"):
+    text = f"{r.get('titulo') or ''} {r.get('descripcion') or ''}"
+    if TWO_FRONTS.search(text):
         out.append("dos_frentes")
+    for name, pattern in (f.get("patrones_texto") or {}).items():     # per municipio (Tigre: proyecto aprobado)
+        if re.search(pattern, text, re.I):
+            out.append(name)
     for z in zones:
         out += [x for x in z["flags"].split(";") if x and x not in ("pasivo_ambiental", "requiere_cloaca_multifamiliar")]
     if r.get("requiere_cloaca"):

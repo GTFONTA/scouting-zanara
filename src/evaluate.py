@@ -15,6 +15,7 @@ productos.activo in config.yaml switches between:
 
 import math
 
+from . import alturas
 from .comparables import PARTIDO
 
 NO_HOUSING = "Sin vivienda como producto"
@@ -164,6 +165,38 @@ def _fot_multi(zone: dict, s: float = 0, front: float | None = None, p: dict | N
     return _f(zone["fot_max" if use_max else "fot"]) or _f(zone["fot"])
 
 
+def _caps(zone: dict, fot: float, r: dict, cfg: dict) -> tuple[float, list[str], bool]:
+    """(FOT that can really be built, why it is lower than the zone's, multifamiliar forbidden by the sector).
+      height   zonificacion.alturas_yaml (Tigre, Ord. 4448/26): FOS x (N + 1) levels of "PB + N"
+      density  productos.m2_por_habitante (Tigre, Gonzalo 19/11/2026: 30): inhabitants of the zone's density
+               (with sewers if it has a potential one) x m2 per inhabitant
+    Without those keys (San Isidro) the FOT doesn't change."""
+    limits, forbidden = [], False
+    heights = alturas.for_config(cfg)
+    cap = heights.cap(zone["zona"], r.get("localidad"), r.get("lat_usada") or r.get("lat"),
+                      r.get("lon_usada") or r.get("lon")) if heights else None
+    if cap:
+        forbidden = cap["sin_multifamiliar"]
+        fos = _f(zone["fos"])
+        by_height = fos * (cap["pb"] + 1) if fos else None
+        if by_height and by_height < fot:
+            fot = by_height
+            limits.append(f"altura Ord. 4448 PB+{cap['pb']} ({cap['fuente']}): FOS {fos:g} x {cap['pb'] + 1} niveles")
+        alerts = r.setdefault("alertas", [])
+        if cap["aviso"]:
+            alerts.append(cap["aviso"])
+        if cap["condiciones"]:
+            alerts.append(f"condiciones_ord_4448 ({cap['condiciones']})")
+        if forbidden:
+            alerts.append(f"multifamiliar_prohibido_ord_4448 ({cap['fuente']})")
+    per_person = cfg["productos"].get("m2_por_habitante")
+    density = _f(zone["densidad_neta_potencial"]) or _f(zone["densidad_neta"])
+    if per_person and density and density * per_person / 10000 < fot:
+        fot = density * per_person / 10000
+        limits.append(f"densidad {density:g} hab/ha x {per_person:g} m2/hab")
+    return fot, limits, forbidden
+
+
 def _lots(u: dict) -> int:
     return max(u[k] or 0 for k in LOTS)
 
@@ -213,10 +246,16 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
     elif normativa.get(r.get("zona_fot_usado") or ""):         # no multifamiliar nearby: FOT only as a reference
         out["zona_fot_usado"] = normativa[r["zona_fot_usado"]][0]["zona"]
     fot = out.get("fot_usado") or r.get("fot_usado")
+    forbidden = False
+    if zm and fot:                   # height (Tigre: Ord. 4448/26) and density can leave part of the FOT unused
+        fot, limits, forbidden = _caps(zm, fot, r, cfg)
+        out["fot_efectivo"], out["limite_fot"] = round(fot, 2), "; ".join(limits)
     if fot:
         out["m2_construibles"], out["incidencia_usd_m2"] = round(s * fot), round(price / (s * fot), 1)
     why_multi = "no_admite_multifamiliar"
-    if zm:
+    if zm and forbidden:
+        why_multi = "multifamiliar_prohibido_ord_4448"
+    elif zm:
         allowed = multifamiliar(zm, s, p) == "Sí"
         m2, inc = s * fot, price / (s * fot)
         if m2 <= c["m2_construibles_min"]:

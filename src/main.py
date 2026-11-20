@@ -31,7 +31,7 @@ COLUMNS = FIELDS + [
     "frente_m", "fondo_m", "frente_fuente", "frente_catastro_m", "superficie_catastro_m2", "partidas_catastro",
     "flag_confianza", "lat_usada", "lon_usada", "barrio_usado", "localidad",
     "zona", "fot_zona", "distancia_borde_m", "zonas_cercanas", "zonas_candidatas", "distancia_zona_c_o_i_m",
-    "zona_fot_usado", "fot_usado", "fot_fuente", "m2_construibles", "incidencia_usd_m2",
+    "zona_fot_usado", "fot_usado", "fot_fuente", "fot_efectivo", "limite_fot", "m2_construibles", "incidencia_usd_m2",
     # Fase 4 (productos.activo): units per product in the most favorable nearby zone
     "zona_unidades", "relevancia", "mejor_producto", "lotes_frente_propio", "lotes_calle_interna", "agrupadas_calle",
     "agrupadas_acceso_comun", "multifamiliar_unidades", "ue_unidades", "unidades_por_derecho",
