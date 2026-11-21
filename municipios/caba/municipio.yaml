@@ -14,6 +14,7 @@ caba:
   cache: data/cache_caba.json
   pausa_s: 0.7
   max_consultas_por_corrida: 3000
+  consultas_reservadas_linderos: 400   # Gonzalo, 20/11/2026: la pasada principal deja 400 para los linderos de los hits
   errores_max: 8                # errores seguidos: se espera espera_recupero_s y se reintenta (hasta recuperos_max)
   reintentos_s: [10, 30]        # 503 o conexión cortada: se reintenta la misma consulta tras estas esperas
   espera_recupero_s: 180

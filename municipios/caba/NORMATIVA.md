@@ -41,7 +41,11 @@ Todo queda en caché en `data/cache_caba.json`: una consulta por parcela, nunca 
   - edificio anterior a 1941 sin resolver (Ley 3.056, consulta al CAAP);
   - parcela receptora o emisora de capacidad constructiva adicional.
 - **Pin sobre la calle:** se buscan parcelas a 12 m alrededor del pin.
-- **Parcela del pin que no coincide con el aviso** (superficie con más de ±15% de diferencia): se usan igual la planta y la altura de esa parcela, y el aviso lleva una alerta.
+- **Parcela del pin que no coincide con el aviso** (superficie con más de ±15% de diferencia; Gonzalo, 20/11/2026):
+  - si el aviso ya daba oportunidad o casi, se buscan las vecinas: una sola que coincida (pin corrido) o el pin más 1 o 2 que sumen la superficie (varios lotes, con la planta sumada);
+  - sin pareja, **como mucho "casi"**.
+- **Distrito especial sin FOT** (APH, AE, U, UBP, RUA, ARE): como mucho "casi", con el flag `distrito_especial_sin_fot`.
+- **Consultas a Ciudad 3D:** tope de 3.000 por corrida, con 400 reservadas para los linderos de los hits.
 
 ## Búsquedas
 

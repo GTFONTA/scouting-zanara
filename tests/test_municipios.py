@@ -308,3 +308,41 @@ def test_caba_retries_a_503_and_recovers_after_an_outage(monkeypatch, caba):
         except RuntimeError:
             pass
     assert c3d.cache["smp"]["039-087-007"] == BUILDABLE and c3d.recoveries >= 1
+
+
+class _FakeC3D:
+    """parcel_by_smp / buildable from dicts, for match_parcels."""
+    def __init__(self, cats, builds):
+        self.cats, self.builds = cats, builds
+
+    def parcel_by_smp(self, smp):
+        return self.cats.get(smp)
+
+    def buildable(self, smp):
+        return self.builds.get(smp, {"sup_edificable_planta": 0})
+
+
+def test_caba_match_parcels_neighbour_or_several_lots(caba):
+    """Gonzalo, 20/11/2026: a listing whose surface isn't the pin's parcel is matched with the neighbours."""
+    k = caba["caba"]
+    pin = {"smp": "A", "superficie_total": "200", "smp_anterior": "B", "smp_siguiente": "C"}
+    e = {"parcelas_linderas": {"smp_linderas": ["D"]}}
+    cats = {"B": {"smp": "B", "superficie_total": "410"}, "C": {"smp": "C", "superficie_total": "190"},
+            "D": {"smp": "D", "superficie_total": "150"}}
+    fake = _FakeC3D(cats, {})
+    m = motor_caba.match_parcels(pin, e, 400, fake, k)                  # B alone (410 ~ 400): the pin was misplaced
+    assert m["tipo"] == "vecina" and m["parcelas"][0][0]["smp"] == "B"
+    m = motor_caba.match_parcels(pin, e, 540, fake, k)                  # A + C + D = 540: three lots together
+    assert m["tipo"] == "varias" and {x[0]["smp"] for x in m["parcelas"]} == {"A", "C", "D"} and m["superficie"] == 540
+    assert motor_caba.match_parcels(pin, e, 3000, fake, k) is None      # nothing near adds up: no match
+
+
+def test_caba_unmatched_parcel_is_at_most_casi(monkeypatch, caba):
+    """A cheap lot whose surface matches no parcel combination stays as casi (Gonzalo, 20/11/2026)."""
+    big = dict(PARCEL, superficie_total="200.00", smp_anterior="", smp_siguiente="")
+    monkeypatch.setattr(motor_caba.Ciudad3D, "parcel", lambda self, lat, lon: big)
+    monkeypatch.setattr(motor_caba.Ciudad3D, "parcel_by_smp", lambda self, smp: None)
+    rows = motor_caba.process({"zonaprop": _zonaprop_items([(-34.5600, -58.4620, 617, 1500000)])}, caba, [])
+    r = rows[0]
+    assert not r["parcela_coincide"] and not r.get("emparejamiento")
+    assert r["resultado"] == "casi" and "parcela sin emparejar" in r["via"]

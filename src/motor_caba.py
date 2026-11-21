@@ -25,6 +25,7 @@ Classification (municipios/caba/municipio.yaml):
   gran predio   superficie >= sup_min_gran_predio, always reported
 """
 
+import copy
 import csv
 import html
 import json
@@ -47,6 +48,7 @@ MAPPERS = {"zonaprop": from_zonaprop, "mercadolibre": from_mercadolibre}
 _GKBA = pyproj.Transformer.from_crs(
     "+proj=tmerc +lat_0=-34.6297166 +lon_0=-58.4627 +k=1 +x_0=100000 +y_0=100000 +ellps=intl +units=m +no_defs",
     4326, always_xy=True).transform
+SPECIAL = re.compile(r"^\s*(APH|AE|U\s*\d|UBP|RUA|ARE)", re.I)     # districts with their own rules
 BLOCKING = ("INTEGRAL", "ESTRUCTURAL")          # catalogued: the building can't be demolished
 CAUTION = ("CAUTELAR",)
 
@@ -55,6 +57,7 @@ COLUMNS = FIELDS + [
     "precio_original", "cotizacion_usada", "superficie_fuente", "superficie_terreno_m2", "superficie_total_m2",
     "superficie_cubierta_m2", "flag_confianza", "lat_usada", "lon_usada",
     "smp", "direccion_catastro", "superficie_catastro_m2", "frente_catastro_m", "parcela_coincide",
+    "emparejamiento", "parcelas_emparejadas",
     "distrito_cpu", "fot_medianera", "fot_semi_libre", "fot_perim_libre", "fot_usado", "tipo_fot", "altura_max_m",
     "altura_unidad_m", "pisos", "planta_edificable_m2", "eficiencia_planta", "m2_sin_plusvalia", "m2_construibles", "incidencia_usd_m2", "plusvalia_uva", "uva_ars", "plusvalia_usd", "incidencia_total_usd_m2",
     "incidencia_ley6062_uva", "incidencia_referencia_usd_m2", "ratio_incidencia", "proteccion", "afectaciones",
@@ -74,14 +77,17 @@ class Ciudad3D:
         self.session = requests.Session()
         self.asked, self.errors, self.failed_in_a_row, self.recoveries = 0, [], 0, 0
         self.stopped = 0                         # queries skipped after giving up (summarised, not one error each)
+        self.capped = 0                          # queries skipped because the run reached its query cap
+        # the main pass leaves consultas_reservadas_linderos for the neighbours of the hits (extra_potential)
+        self.limit = self.c["max_consultas_por_corrida"] - self.c.get("consultas_reservadas_linderos", 0)
         self._uva = None
 
     def _get(self, url: str, params: dict | None = None) -> dict | list:
         """One query, with retries for the server's hiccups (503, connection reset). After `errores_max` failures in
         a row it waits `espera_recupero_s` and tries again, up to `recuperos_max` times; then it gives up for the run.
         First night run (18/11/2026): a short outage tripped the old stop for good and left 1.719 listings unchecked."""
-        if self.asked >= self.c["max_consultas_por_corrida"]:
-            self.stopped += 1
+        if self.asked >= self.limit:
+            self.capped += 1
             raise RuntimeError("se dejó de consultar (tope de consultas)")
         if self.failed_in_a_row >= self.c["errores_max"]:
             if self.recoveries >= self.c.get("recuperos_max", 3):
@@ -189,6 +195,9 @@ class Ciudad3D:
         if self.stopped:
             errors.append(f"se dejó de consultar: {self.stopped} consultas sin hacer"
                           f" (Ciudad 3D no respondió tras {self.recoveries} esperas)")
+        if self.capped:                          # not an outage: the rest waits for the next run (cache)
+            errors.append(f"tope de {self.c['max_consultas_por_corrida']} consultas por corrida: {self.capped} "
+                          f"consultas quedan para la próxima corrida")
         return {"portal": "Ciudad 3D", "paginas_ok": self.asked, "avisos": len(self.cache["smp"]), "errores": errors,
                 "falla": bool(self.errors)}
 
@@ -200,7 +209,7 @@ def _f(v) -> float:
         return 0.0
 
 
-def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
+def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None, try_match: bool = False) -> None:
     """Fill r in place with the parcel, buildable m2, plusvalía, incidence and classification."""
     k = cfg["caba"]
     r.update(resultado="descartado", via="")
@@ -244,8 +253,30 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
     if r.get("pin_generico") and not r["parcela_coincide"]:
         r["motivo_descarte"] = "ubicacion_dudosa (pin genérico del portal y la parcela de la dirección no coincide)"
         return
+    group, pending = None, False      # parcels of the listing when the pin's alone doesn't match its surface
     if not r["parcela_coincide"]:
-        r["alertas"].append(f"parcela_del_pin_no_coincide (catastro {sup_cat:.0f} m2): FOT de la parcela vecina")
+        try:
+            group = match_parcels(p, e, s, c3d, k) if try_match else None
+        except RuntimeError as ex:
+            pending = True                          # query cap or outage: tried again in the next run (cache)
+            if "tope de consultas" not in str(ex):
+                c3d.errors.append(f"{r['id']}: {ex}")
+        if group and group["tipo"] == "vecina":      # the pin fell on the next parcel: that one is the listing's
+            p, e, sup_cat = group["parcelas"][0]
+            r.update(smp=p["smp"], direccion_catastro=p.get("direccion", ""), superficie_catastro_m2=sup_cat,
+                     frente_catastro_m=_f(p.get("frente")) or None)
+        if group:
+            r["emparejamiento"] = group["tipo"]
+            r["parcelas_emparejadas"] = " + ".join(x[0]["smp"] for x in group["parcelas"])
+            r["alertas"].append(f"parcela_emparejada ({group['tipo']}: {r['parcelas_emparejadas']}, "
+                                f"{group['superficie']:.0f} m2 en catastro)")
+        elif pending:
+            r["alertas"].append(f"parcela_del_pin_no_coincide (catastro {sup_cat:.0f} m2): vecinas sin consultar "
+                                f"por el tope de consultas, se reintenta en la próxima corrida; como mucho casi")
+        else:
+            r["alertas"].append(f"parcela_del_pin_no_coincide (catastro {sup_cat:.0f} m2, ninguna vecina suma la "
+                                f"superficie del aviso): como mucho casi")
+    matched = r["parcela_coincide"] or bool(group)
     fot = e.get("fot") or {}
     options = {"medianera": _f(fot.get("fot_medianera")), "semi libre": _f(fot.get("fot_semi_libre")),
                "perímetro libre": _f(fot.get("fot_perim_libre"))}
@@ -284,9 +315,13 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
     r["gran_predio"] = s >= k["sup_min_gran_predio"]
     # Buildable m2: the envelope of the Código Urbanístico. The footprint is Ciudad 3D's (L.O. to L.F.I.), scaled
     # to the listing's surface; the front is the catastro's when the parcel matches, else the one in the text.
-    front = (r["frente_catastro_m"] if r["parcela_coincide"] else None) or _f(r.get("frente_m")) or None
+    front = (r["frente_catastro_m"] if matched else None) or _f(r.get("frente_m")) or None
     plan_c3d = _f(e.get("sup_edificable_planta"))
-    if plan_c3d and sup_cat:
+    if group and group["tipo"] == "varias":        # several lots together: the sum of their footprints
+        plan_total = sum(min(_f(ei.get("sup_edificable_planta")) or si, si) for _, ei, si in group["parcelas"])
+        plan = s * min(plan_total / group["superficie"], 1.0)
+        front = sum(_f(pi.get("frente")) for pi, _, _ in group["parcelas"]) or front
+    elif plan_c3d and sup_cat:
         plan = s * min(plan_c3d / sup_cat, 1.0)
     elif front:
         plan = min(s, front * max(k["banda_minima_m"], k["fondo_tipico_m"]))
@@ -338,8 +373,47 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None) -> None:
         r["resultado"], r["via"] = "casi", "multifamiliar"
     else:
         r["motivo_descarte"] = "incidencia_alta"
+    # Gonzalo, 20/11/2026: without a reliable parcel, or in a special district with no FOT (own rules), at most casi
+    special = any((d or {}).get("distrito_especifico") for d in e.get("distrito_especial") or []) or \
+        bool(SPECIAL.match(r["distrito_cpu"] or ""))
+    doubt = "parcela sin emparejar" if not matched else \
+        f"distrito especial {r['distrito_cpu']} sin FOT: reglas propias" if special and not r["fot_usado"] else ""
+    if doubt and r["resultado"] == "oportunidad":
+        r["resultado"], r["via"] = "casi", f"multifamiliar ({doubt})"
+    if special and not r["fot_usado"]:
+        r["flags"] = "; ".join(x for x in (r["flags"], f"distrito_especial_sin_fot ({r['distrito_cpu']}: verificar sus reglas)") if x)
     if r["resultado"] == "descartado" and r["gran_predio"] and not r["proteccion"] in BLOCKING:
         r["resultado"], r["via"], r["motivo_descarte"] = "gran_predio", "gran_predio", ""
+
+
+def match_parcels(p: dict, e: dict, s: float, c3d: Ciudad3D, k: dict) -> dict | None:
+    """The parcels of a listing whose surface doesn't match the pin's parcel (sample of 60 hits, 20/11/2026: 12%
+    the pin fell on the next parcel, 43% several lots together). Neighbours: the side ones of Ciudad 3D and the
+    previous/next of the catastro. Within tolerancia_superficie of the listing's surface, in this order:
+      vecina   one neighbour alone (the pin was misplaced)
+      varias   the pin's parcel + 1 or 2 neighbours (the closest total)
+    -> {'tipo', 'parcelas': [(catastro, edificabilidad, superficie)], 'superficie'} or None."""
+    tol = k["tolerancia_superficie"] * s
+    sup0 = _f(p.get("superficie_total")) or _f(e.get("superficie_parcela"))
+    smps = [*((e.get("parcelas_linderas") or {}).get("smp_linderas") or []), p.get("smp_anterior"), p.get("smp_siguiente")]
+    smps = [x for x in dict.fromkeys(smps) if x and x != p["smp"]][:k.get("vecinas_max", 6)]
+    neigh = []
+    for smp in smps:
+        q = c3d.parcel_by_smp(smp)
+        if q and _f(q.get("superficie_total")):
+            neigh.append((q, _f(q["superficie_total"])))
+    single = [(abs(sq - s), q, sq) for q, sq in neigh if abs(sq - s) <= tol]
+    if single:
+        _, q, sq = min(single, key=lambda t: t[0])
+        return {"tipo": "vecina", "parcelas": [(q, c3d.buildable(q["smp"]), sq)], "superficie": sq}
+    combos = [((q,), sq) for q, sq in neigh] + \
+        [((a, b), sa + sb) for i, (a, sa) in enumerate(neigh) for b, sb in neigh[i + 1:]]
+    combos = [(abs(sup0 + extra - s), qs, sup0 + extra) for qs, extra in combos if abs(sup0 + extra - s) <= tol]
+    if not combos:
+        return None
+    _, qs, total = min(combos, key=lambda t: t[0])
+    parcels = [(p, e, sup0)] + [(q, c3d.buildable(q["smp"]), _f(q["superficie_total"])) for q in qs]
+    return {"tipo": "varias", "parcelas": parcels, "superficie": total}
 
 
 def unit_height(e: dict) -> float:
@@ -391,7 +465,7 @@ def extra_potential(r: dict, c3d: Ciudad3D, cfg: dict) -> None:
     can_complete = h > 9.0 + 1e-6 and "distrito_especial" not in (r.get("flags") or "")
     found = []
     for smp in neighbours:
-        if c3d.asked + 2 > c3d.c["max_consultas_por_corrida"]:
+        if c3d.asked + 2 > c3d.limit:
             r["alertas"].append("linderos_sin_consultar (tope de consultas)")
             break
         try:
@@ -443,19 +517,27 @@ def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> lis
     broken = 0
     for i, r in enumerate(rows, 1):
         try:
+            before = copy.deepcopy(r)
             evaluate(r, c3d, cfg, mep)
+            # the neighbours are looked up only for the listings that would be a hit with the pin's parcel: matching
+            # every unmatched listing would cost ~15.000 queries (20/11/2026)
+            if r.get("smp") and not r.get("parcela_coincide") and r["resultado"] in ("oportunidad", "casi", "gran_predio"):
+                r.clear()
+                r.update(before)
+                evaluate(r, c3d, cfg, mep, try_match=True)
         except Exception as e:                       # noqa: BLE001 - one odd listing must never stop the run
             broken += 1
             r["resultado"], r["motivo_descarte"] = "descartado", f"error_evaluacion ({type(e).__name__})"
             c3d.errors.append(f"aviso {r.get('id')}: {type(e).__name__}: {str(e)[:120]}")
         if i % 100 == 0:
             c3d.save()                               # a crash later doesn't lose the API answers
-    for r in rows:                                   # after every listing: never takes queries from the main pass
-        if r["resultado"] in ("oportunidad", "casi", "gran_predio"):
-            try:
-                extra_potential(r, c3d, cfg)
-            except Exception as e:                   # noqa: BLE001 - a flag must never stop the run
-                r["alertas"].append(f"linderos_sin_revisar ({type(e).__name__})")
+    c3d.limit = cfg["caba"]["max_consultas_por_corrida"]     # the reserve, for the neighbours of the hits
+    order = {"oportunidad": 0, "gran_predio": 1, "casi": 2}     # the reserve goes to the opportunities first
+    for r in sorted((x for x in rows if x["resultado"] in order), key=lambda x: order[x["resultado"]]):
+        try:
+            extra_potential(r, c3d, cfg)
+        except Exception as e:                       # noqa: BLE001 - a flag must never stop the run
+            r["alertas"].append(f"linderos_sin_revisar ({type(e).__name__})")
     for r in rows:
         r["alertas"] = "; ".join(r["alertas"]) if isinstance(r["alertas"], list) else r["alertas"]
     c3d.save()

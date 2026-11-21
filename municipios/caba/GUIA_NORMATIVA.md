@@ -147,6 +147,17 @@ Para cada aviso con parcela de Ciudad 3D:
 4. **Completamiento y lindero a esquina:** van como señal, "potencial extra, revisar por completamiento y esquina". No se suman a los m².
 5. **Sin decidir:** si los m² construibles son brutos o vendibles. Siguen siendo brutos, cubiertos, como antes.
 
+**Ajustes del 20/11/2026,** después de ver la primera corrida con la regla nueva (515 oportunidades, 449 con parcela que no coincidía):
+
+6. **Emparejar el aviso con sus parcelas.** Si la superficie del aviso difiere en más de ±15% de la parcela del pin, se buscan las vecinas: las laterales de Ciudad 3D y la anterior y la siguiente del catastro.
+   - **Una vecina sola que coincide:** el pin estaba corrido y se usa esa parcela.
+   - **El pin más 1 o 2 vecinas que suman la superficie:** son varios lotes juntos, y la planta es la suma de las plantas de cada parcela.
+   - **Sin pareja:** el aviso sale **como mucho como "casi"**.
+
+   En una muestra de 60 hits: 12% eran pin corrido, 43% varios lotes, 42% sin pareja cercana. Las vecinas se consultan solo si el aviso ya daba oportunidad o casi con la parcela del pin, para no gastar consultas.
+7. **Distrito especial sin FOT** (APH, AE, U, UBP, RUA, ARE): **como mucho "casi"**, con el flag `distrito_especial_sin_fot`, porque tiene reglas propias. Las zonas comunes sin FOT en Ciudad 3D (C3 II, R1a 12, R2a II 16) se calculan normal; solo falta la plusvalía, que avisa `sin_fot`.
+8. **Consultas:** la pasada principal deja 400 de las 3.000 consultas por corrida para los linderos de los hits.
+
 Los parámetros están en `municipios/caba/municipio.yaml`, sección `caba`.
 
 ## 9. Oportunidades que pasan desapercibidas
@@ -190,7 +201,7 @@ Los parámetros están en `municipios/caba/municipio.yaml`, sección `caba`.
 - **Cono de Aeroparque y cinturón digital** (más de 35 m): el plano límite lo fija otro organismo (arts. 6.8 y 6.9).
 - **USAB 0:** sin completamiento, sin compensación de L.F.I. y sin capacidad constructiva adicional.
 - **Lotes de menos de 300 m²:** el Consejo puede evaluar el perfil edificable caso por caso según el entorno (art. 6.3). Puede jugar a favor o en contra, así que hay incertidumbre.
-- **Pin del portal sobre otra parcela:** con superficie de catastro distinta en más de ±15%, el cálculo es de la parcela vecina. Ya sale como alerta.
+- **Pin del portal sobre otra parcela o varios lotes juntos:** se empareja con las vecinas (sección 8, punto 6). Sin pareja, como mucho "casi".
 
 ## 11. Checklist manual de un hit
 
