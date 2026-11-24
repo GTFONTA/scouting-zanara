@@ -150,6 +150,40 @@ incremental:
   sufijo_recientes: "-orden-publicado-descendente"   # SIN PROBAR: verificar en la primera corrida de CABA
   estado: data/incremental_zonaprop{sufijo}.json.gz
 
+rentabilidad:
+  # Gonzalo, 23/11/2026: cada hit muestra incidencia, costo total, venta y diferencia por m², y los listados se
+  # ordenan por esa diferencia. Valor de venta: tabla de informes públicos hasta que se llene el registro propio
+  # (margen.registro). No cambia qué es oportunidad: solo agrega datos y el orden. false = orden de antes.
+  activo: true
+  tabla: data/valores_venta.csv    # municipio, zona (barrio/localidad; _partido = todo el municipio), USD/m² general y a estrenar
+  premio_a_estrenar: 1.25          # sin dato de a estrenar: general x 1,25 (mediana de los 8 barrios de CABA con los dos datos: 1,22)
+  fraccion_vendible: 1.0           # m² vendibles / m² construibles (1,0 = se toman todos, como el plan de la Fase 5)
+  costo_loteo_abierto_usd_m2: 0    # lotes con frente propio o agrupadas a la calle: sin obra de infraestructura (duda 5 de la Fase 5)
+  # multifamiliar: costo de obra = margen.costo_obra_usd_m2.multifamiliar; loteo con calle interna = margen.costo_loteo_bc_usd_m2_bruto
+  alias_zonas:                     # nombres de los portales -> zona de la tabla (además, "Palermo Soho" -> "Palermo" por prefijo)
+    centro / microcentro: San Nicolás
+    microcentro: San Nicolás
+    tribunales: San Nicolás
+    congreso: Balvanera
+    once: Balvanera
+    abasto: Balvanera
+    barrio norte: Recoleta
+    villa lugano: Lugano
+    parque centenario: Caballito
+    botánico: Palermo
+    las cañitas: Palermo
+    barrancas de belgrano: Belgrano
+    lomas de núñez: Núñez
+    villa soldati: Nueva Pompeya
+    pompeya: Nueva Pompeya
+    villa santa rita: Santa Rita
+    la paternal: Paternal
+    villa gral. mitre: Villa General Mitre
+    villa gral mitre: Villa General Mitre
+    parque rivadavia: Caballito
+    primera junta: Caballito
+    boulogne: Boulogne Sur Mer
+
 margen:
   # Fase 5 (plan aprobado por Gonzalo el 15/11/2026): valor de venta de la zona y margen de cada hit.
   # activo: false = la corrida no cambia en nada (regla de la Fase 4). El margen entra primero como dato y orden.

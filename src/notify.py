@@ -182,6 +182,36 @@ def _hit_rows(rows: list[dict], columns: list[tuple[str, callable]], with_old_pr
     return "\n".join(out)
 
 
+def _rent_cell(r):
+    d = r.get("rent_diferencia_usd_m2")
+    if d is None:
+        return "-"
+    color = "#080" if d > 0 else "#b00"
+    return (f"<b style='color:{color}'>{_n(d)}</b><br><span style='color:#666;font-size:11px'>"
+            f"{r['rent_margen_pct']:g}% · por {html.escape(r.get('rent_por') or '')}</span>")
+
+
+# Gonzalo, 23/11/2026: every hit shows land incidence, total cost, sale value and the difference, per m2
+RENT_COLUMNS = [
+    ("Rentabilidad USD/m²", _rent_cell),
+    ("Incidencia USD/m²", lambda r: _n(r.get("rent_incidencia_usd_m2")) or "-"),
+    ("Costo total USD/m²", lambda r: _n(r.get("rent_costo_total_usd_m2")) or "-"),
+    ("Venta USD/m²", lambda r: f"<span title='{html.escape(r.get('rent_venta_fuente') or '')}'>"
+                               f"{_n(r.get('rent_venta_usd_m2')) or '-'}</span>"),
+]
+
+
+def rent_note(cfg) -> str:
+    """The paragraph that explains the profit columns, shared by the PBA and CABA mails."""
+    k, m = cfg["rentabilidad"], cfg["margen"]
+    return ("<p style='color:#666'>Ordenadas por rentabilidad esperada por m² = venta − costo total. "
+            f"Multifamiliar, por m² vendible: costo total = incidencia + {_n(m['costo_obra_usd_m2']['multifamiliar'])} "
+            "de obra; venta = departamento a estrenar del barrio o localidad (informes públicos; sin dato de a estrenar, "
+            f"el valor general × {k['premio_a_estrenar']:g}). Loteo, por m² de terreno: venta = lote chico de la "
+            "localidad (con calle interna, menos la calle). Valores gruesos, por zona: sirven para comparar, no para tasar."
+            "</p>")
+
+
 def _place(r):
     return html.escape(f"{r.get('direccion') or ''}, {r.get('barrio') or ''}")
 
@@ -267,36 +297,40 @@ def _render_products(rows, health, changes, n_raw, cfg) -> tuple[str, str]:
     shown = [r for r in rows if r["resultado"] in ("oportunidad", "casi", "gran_predio")]
     new = changes["nuevas"] if sheet_ok else shown          # without Sheet everything counts as new
     drops = changes["bajas_de_precio"] if sheet_ok else []
-    blocks = sections(new)
+    blocks = sections(new, cfg.get("rentabilidad", {}).get("activo", False))
     n = sum(1 for r in new if r["resultado"] == "oportunidad")
 
     parts, failed = _health(health, changes)
     ratio = f"{p['umbral_ratio_loteo']:g}".replace(".", ",")
+    profit = cfg.get("rentabilidad", {}).get("activo", False)
+    R = (lambda cols: RENT_COLUMNS + cols) if profit else (lambda cols: cols)    # noqa: E731
+    if profit:
+        parts.append(rent_note(cfg))
     parts += [f"<h2>Oportunidades multifamiliar ({len(blocks['multifamiliar'])})</h2>",
               f"<p style='color:#666'>Zona que admite multifamiliar, m² construibles &gt; {c['m2_construibles_min']} e "
               f"incidencia &lt; USD {c['incidencia_max_usd']}/m².</p>",
-              _hit_rows(blocks["multifamiliar"], MULTI_COLUMNS, front_matters=False),
+              _hit_rows(blocks["multifamiliar"], R(MULTI_COLUMNS), front_matters=False),
               f"<h2>Oportunidades loteo / agrupadas ({len(blocks['loteo_agrupadas'])})</h2>",
               f"<p style='color:#666'>{p['unidades_min']} unidades o más por derecho y USD por unidad hasta "
               f"{ratio} veces el valor de un lote chico de la localidad (con menos de "
               f"{p['comparables']['avisos_min']} lotes chicos en la localidad, la mediana del partido). "
-              "Ordenadas por USD por unidad.</p>",
-              _hit_rows(blocks["loteo_agrupadas"], LOT_COLUMNS),
+              + ("" if profit else "Ordenadas por USD por unidad.") + "</p>",
+              _hit_rows(blocks["loteo_agrupadas"], R(LOT_COLUMNS)),
               f"<h2>Bajas de precio ({len(drops)})</h2>",
-              _hit_rows(drops, NEAR_COLUMNS, with_old_price=True),
+              _hit_rows(drops, R(NEAR_COLUMNS), with_old_price=True),
               f"<h2>Grandes predios ({len(blocks['gran_predio'])})</h2>",
               f"<p style='color:#666'>{_n(p['sup_min_gran_predio'])} m² o más en zona con vivienda, a cualquier precio "
               "(los que ya son oportunidad van arriba).</p>",
-              _hit_rows(blocks["gran_predio"], BIG_COLUMNS),
+              _hit_rows(blocks["gran_predio"], R(BIG_COLUMNS)),
               f"<h2>Casi-oportunidades ({len(blocks['casi'])})</h2>",
               f"<p style='color:#666'>Multifamiliar con incidencia entre {c['incidencia_max_usd']} y "
               f"{c['incidencia_casi_max_usd']}, multifamiliar condicional, o loteo que cierra solo con aprobación "
               "(O.T. o Urbanización Especial).</p>",
-              _hit_rows(blocks["casi"], NEAR_COLUMNS),
+              _hit_rows(blocks["casi"], R(NEAR_COLUMNS)),
               f"<h2>Sin dirección — revisar ({len(blocks['sin_direccion'])})</h2>",
               "<p style='color:#666'>El aviso no da la altura: FOT y unidades de la zona más favorable de la calle, "
               "esquina o localidad, así que pueden ser mejores que los reales.</p>",
-              _hit_rows(blocks["sin_direccion"], NEAR_COLUMNS)]
+              _hit_rows(blocks["sin_direccion"], R(NEAR_COLUMNS))]
     res = Counter(r["resultado"] for r in rows)
     why = Counter(r["motivo_descarte"].split(" (")[0] for r in rows if r["resultado"] == "descartado")
     portals = ", ".join(f"{h['portal']} {h['avisos']}" for h in health) or "reprocesado"

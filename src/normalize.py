@@ -211,6 +211,86 @@ def front_depth(text: str, surface: float | None) -> tuple[float | None, float |
     return None, depths[0][1] if depths else None
 
 
+# ---------------------------------------------------------------- listings that load the buildable m2 as the lot
+# Gonzalo, 23/11/2026 (CABA errors #1-#7 in municipios/caba/REGISTRO_ERRORES.md): many listings put the buildable,
+# sellable or "capacidad constructiva" m2 where the lot surface goes; the lot is in the text or in front x depth.
+_BIG = r"(\d{1,3}(?:\. ?\d{3})+|\d{2,6})(?:, ?\d+)?"      # "1.700", "1. 116" (Zonaprop), "2056", "1200,50"
+_M2 = r"\s*(?:m2|m²|mts2|mt2|mts\.?|metros(?:\s+cuadrados)?|m)\b"
+_BUILT = r"(?:construibles?|vendibles?|edificables?|a\s+construir|de\s+construcci[oó]n|capacidad\s+constructiva|cap\.?\s*constr\.?)"
+# the number of the buildable m2 is the one right next to the word: "1.700 metros cuadrados construibles",
+# "Sup vendible 2056 mts", "capacidad constructiva 1200", "cap constr 1200" (not "lote 480 m2 ... 550 construibles")
+_BUILT_NUM = [re.compile(_BIG + r"(?:" + _M2 + r")?\s*(?:totales\s+|cubiertos\s+)?" + _BUILT, re.I),
+              re.compile(_BUILT + r"(?:\s+(?:de|total(?:es)?|estimada|aprox\.?|hasta))*\s*:?\s*" + _BIG, re.I),
+              re.compile(r"(?:sup(?:erficie)?\.?\s+)" + _BUILT + r"\s*:?\s*" + _BIG, re.I)]
+_LOT_STATED = [
+    re.compile(r"\b(?:superficie|sup\.?)\s+(?:de(?:l)?\s+)?(?:la\s+)?(?:parcela|terreno|lote)\s*[:=]?\s*" + _BIG + _M2, re.I),
+    re.compile(r"\b(?:lote|terreno)\s+(?:de\s+)?" + _BIG + _M2, re.I),
+]
+# several lots sold together: "2 lotes", "dos parcelas", "lotes linderos", "unificados" (not "tenemos más lotes")
+SEVERAL_LOTS = re.compile(r"\b(?:dos|tres|cuatro|2|3|4|varios|ambos)\s+(?:lotes|terrenos|parcelas)\b"
+                          r"|\blotes\s+(?:linderos|contiguos|unificad|juntos|en\s+block)|\bunificad[oa]s?\b"
+                          r"|\bparcelas\s+(?:linderas|contiguas|unificad)|lotes?\s+(?:n[°ºo]?\.?\s*)?\d+\s+y\s+\d+"   # "isidrolote N° 11 y 12"
+                          r"|\bpor\s+separado\b"
+                          r"|\bse\s+venden\s+(?:en\s+)?(?:block|conjunto|juntos)\b|\ben\s+conjunto\b", re.I)   # not "edificio en block"
+# "galpón de 562 M2 cubiertos sobre lote de 525", "354 m² cubiertos sobre lote propio" (CABA errors #9, #10)
+_COVERED_NUM = re.compile(_BIG + r"(?:" + _M2 + r")?\s*(?:totales\s+)?cubiert", re.I)
+SAME = 0.03                      # a number of the text "is" the listing's surface within ±3%
+_PART = re.compile(r"descubiert|libre|parquizad|patio|jard[ií]n|verde", re.I)
+
+
+def _big(s: str) -> float | None:
+    return _num(s.replace(".", "").replace(" ", ""))
+
+
+def clean_numbers(text: str) -> str:
+    """Zonaprop's normalized text: "25oo M2" -> "2500 M2"."""
+    return re.sub(r"(?<=\d)[oO]{2}\b", "00", text)
+
+
+def _built_numbers(text: str) -> list[float]:
+    """Numbers stated as buildable or sellable m2 ('1.700 m2 construibles', 'capacidad constructiva 1200')."""
+    return [v for pat in _BUILT_NUM for m in pat.finditer(text) if (v := _big(m.group(1)))]
+
+
+def lot_from_text(r: dict, surface: float, portal_front: float | None, portal_depth: float | None) -> tuple:
+    """(lot m2, source) when the listing's surface is the buildable m2 and the real lot can be read, or
+    (None, 'construible') when it is clearly the buildable m2 but no lot is stated, or (None, '')."""
+    text = clean_numbers((r.get("titulo") or "") + " || " + (r.get("descripcion") or ""))  # "Lote || 1.500 m2" isn't "lote 1.500 m2"
+    built = any(abs(v - surface) <= SAME * surface for v in _built_numbers(text))
+    # the listing's surface is the covered area: the portal's covered m2 or "562 M2 cubiertos" in the text
+    # (CABA errors #8-#10, Gonzalo 24/11/2026: "1400 m² tot. / 1400 m² cub." on a 7,50 x 30 lot)
+    cov = r.get("superficie_cubierta_m2")
+    covered = not built and (bool(cov and abs(cov - surface) <= SAME * surface)
+                             or any(abs(_big(m.group(1)) - surface) <= SAME * surface for m in _COVERED_NUM.finditer(text)))
+    larger = built or covered        # the surface is bigger than the lot: any smaller lot stated is the lot
+    several = bool(SEVERAL_LOTS.search(text))
+    # under half the surface; when the surface is the buildable or covered m2, anything smaller
+    small = lambda v: v and 50 <= v < ((1 - SAME) if larger else PARTIAL) * surface            # noqa: E731
+    note = " (la superficie del aviso es la cubierta)" if covered else ""
+    # "Terreno de 250m2 aprox descubierto": the yard of a bigger property, not the lot
+    stated = [v for pat in _LOT_STATED for m in pat.finditer(text) if (v := _big(m.group(1)))
+              and not _PART.search(text[m.end():m.end() + 30])]
+    if not covered and any(abs(v - surface) <= 0.1 * surface for v in stated):   # covered 562 on a 525 lot
+        return None, ""                        # the text also states the listing's surface as the lot: it is right
+    for v in stated:                           # "Superficie de parcela: 212m2", "LOTE 110 mts"
+        if small(v) and (larger or not several):             # "2 lotes ... lote de 522 m2": one of them
+            return v, "superficie del lote en el texto" + note
+    if portal_front and portal_depth and small(portal_front * portal_depth) and (larger or not several):
+        return portal_front * portal_depth, "frente x largo del aviso" + note
+    dims = [(m, _dec(m.group(1)), _dec(m.group(2))) for m in _DIMS.finditer(text)]
+    dims = [(m, a, b) for m, a, b in dims
+            if a and b and FRONT_RANGE[0] <= a <= FRONT_RANGE[1] and DEPTH_RANGE[0] <= b <= DEPTH_RANGE[1]]
+    if covered and any(abs(a * b - surface) <= 0.1 * surface for _, a, b in dims):
+        return None, ""                        # "lote de 17,32 x 68,60, total: 1188 m2": the surface is the lot
+    for m, a, b in dims:                       # "LOTE 7.68 X 34.77", "8.67 x 39.97 mts"
+        same_front = portal_front and abs(a - portal_front) <= 0.15 * portal_front
+        # only covered: the measures must be the lot's ("lote de 25x10"), not a room's ("Play Room (6x9)")
+        lot_word = bool(re.search(r"lote|terreno|parcela", text[max(0, m.start() - 30):m.start()], re.I))
+        if small(a * b) and (built or (covered and lot_word) or (same_front and not several)):
+            return a * b, "medidas del texto" + note
+    return (None, "construible") if built else (None, "")
+
+
 def _zonaprop_price(item):
     """Sale price; USD preferred when a listing shows more than one currency."""
     prices = [p for op in item.get("priceOperationTypes") or []
@@ -344,6 +424,9 @@ def normalize(raw: dict, cfg: dict) -> dict:
     # superficie de terreno; frente y fondo del portal o, si no los da, del texto del aviso
     land, total = r.get("superficie_terreno_m2"), r.get("superficie_total_m2")
     front, depth = r.get("frente_m"), r.get("fondo_m")
+    # a front or depth of 1.000 m or more in the portal's fields is a lost decimal comma ("Largo: 1730" = 17,30)
+    front, depth = [v / 100 if v and v >= 1000 else v for v in (front, depth)]
+    portal_front, portal_depth = front, depth
     if not front or not depth:
         f_txt, d_txt = front_depth(f"{r.get('titulo') or ''}\n{r.get('descripcion') or ''}", land or total)
         front, depth = front or f_txt, depth or d_txt
@@ -362,6 +445,14 @@ def normalize(raw: dict, cfg: dict) -> dict:
     else:
         r["superficie_m2"], r["superficie_fuente"] = None, ""
         r["motivo_descarte"] = r["motivo_descarte"] or "sin_superficie"
+    if r["superficie_m2"]:
+        lot, why = lot_from_text(r, r["superficie_m2"], portal_front, portal_depth)
+        if lot:
+            r["alertas"].append(f"superficie_corregida (el aviso dice {r['superficie_m2']:.0f} m2; {why}: {lot:.0f} m2)")
+            r["superficie_aviso_m2"] = r["superficie_m2"]          # for the other publications of the same lot
+            r["superficie_m2"], r["superficie_fuente"], r["superficie_dudosa"] = round(lot, 1), why, False
+        elif why == "construible":
+            r["motivo_descarte"] = r["motivo_descarte"] or                 f"superficie_construible (los {r['superficie_m2']:.0f} m2 del aviso son construibles y no da el lote)"
     if r["superficie_m2"] and fxl and abs(fxl - r["superficie_m2"]) / r["superficie_m2"] > 0.3:
         r["alertas"].append(f"superficie_no_coincide_con_frente_x_fondo ({fxl:.0f})")
     r["frente_fuente"] = "aviso" if front else "desconocido"

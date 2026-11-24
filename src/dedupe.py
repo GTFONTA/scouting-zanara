@@ -51,6 +51,30 @@ def share_front(rows: list[dict], cfg: dict) -> None:
             r["alertas"].append(f"frente_de_otra_publicacion ({best['id']})")
 
 
+def share_surface(rows: list[dict], cfg: dict) -> None:
+    """The same lot published several times, one with its surface corrected from the text (the covered or buildable
+    m2 loaded as the lot) and another without text to correct it: the corrected lot serves the other (San Isidro,
+    24/11/2026: "Galpón - Beccar", 1783 m2 covered on a 1084 m2 lot; the Mercado Libre copies have no description).
+    Same price, the other's listed surface equal to the corrected one's original, and the same place."""
+    d = cfg["deduplicacion"]
+    tol, max_m, same_street_m = d["tolerancia"], d["distancia_max_m"], d["distancia_max_misma_calle_m"]
+    ok = lambda r: r.get("precio_usd") and r.get("superficie_m2") and r.get("lat") is not None   # noqa: E731
+    fixed = [r for r in rows if ok(r) and r.get("superficie_aviso_m2")]
+    for r in rows:
+        if not ok(r) or r.get("superficie_aviso_m2"):
+            continue
+        for k in fixed:
+            if not (_close(r["precio_usd"], k["precio_usd"], tol) and _close(r["superficie_m2"], k["superficie_aviso_m2"], tol)):
+                continue
+            dist = _meters(r, k, "lat", "lon")
+            if dist < max_m or (bool(_street(r)) and _street(r) == _street(k) and dist < same_street_m):
+                r["alertas"].append(f"superficie_corregida (el aviso dice {r['superficie_m2']:.0f} m2; otra publicación "
+                                    f"del mismo inmueble, {k['id']}: {k['superficie_m2']:.0f} m2)")
+                r["superficie_aviso_m2"], r["superficie_m2"] = r["superficie_m2"], k["superficie_m2"]
+                r["superficie_fuente"], r["superficie_dudosa"] = f"otra publicación ({k['superficie_fuente']})", False
+                break
+
+
 def _close(x, y, tol) -> bool:
     return abs(x - y) <= tol * max(x, y)
 

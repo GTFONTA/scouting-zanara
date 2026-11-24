@@ -346,3 +346,78 @@ def test_caba_unmatched_parcel_is_at_most_casi(monkeypatch, caba):
     r = rows[0]
     assert not r["parcela_coincide"] and not r.get("emparejamiento")
     assert r["resultado"] == "casi" and "parcela sin emparejar" in r["via"]
+
+
+@pytest.mark.parametrize("title, loose", [("Lote prueba", True), ("Venta 2 lotes linderos", False)])
+def test_caba_sum_of_parcels_needs_several_lots_in_the_text(monkeypatch, caba, title, loose):
+    """CABA errors #2, #6 (23/11/2026): pin + neighbours summing an inflated surface is a coincidence unless the
+    listing says it sells several lots."""
+    monkeypatch.setattr(motor_caba.Ciudad3D, "parcel_by_smp", lambda self, smp: {
+        "smp": smp, "superficie_total": "600.00", "frente": "13"} if smp == "039-087-006" else None)
+    items = _zonaprop_items([(-34.5600, -58.4620, 1217, 300000)])
+    items[0]["title"] = title
+    r = motor_caba.process({"zonaprop": items}, caba, [])[0]
+    assert r["emparejamiento"] == "varias"
+    assert ("suma_de_parcelas_sin_mencion" in r["alertas"]) == loose
+    if loose:
+        assert r["resultado"] != "oportunidad"
+
+
+def test_caba_pin_far_from_its_barrio_is_at_most_casi():
+    """CABA error #1 (23/11/2026): a Congreso lot with its pin on Av. Cabildo, 8,5 km from the other Congreso pins."""
+    def row(i, lat, lon, direccion="", catastro=""):
+        return {"id": i, "barrio": "Congreso", "lat": lat, "lon": lon, "direccion": direccion,
+                "direccion_catastro": catastro, "resultado": "oportunidad", "via": "multifamiliar", "alertas": []}
+    rows = [row(f"c{i}", -34.609 + i * 0.001, -58.392) for i in range(5)]
+    rows += [row("lejos", -34.558, -58.460, catastro="CABILDO AV. 2495"),
+             row("confirmado", -34.558, -58.460, direccion="Cabildo al 2400", catastro="CABILDO AV. 2495")]
+    motor_caba._demote_far_pins(rows, motor_caba._far_from_barrio(rows, 2.5))
+    res = {r["id"]: r["resultado"] for r in rows}
+    assert res["lejos"] == "casi" and res["confirmado"] == "oportunidad" and res["c0"] == "oportunidad"
+
+
+def test_caba_match_ignores_repeated_smp_and_checks_the_front(caba):
+    """CABA error #4: '007a' (Ciudad 3D) and '007A' (catastro) are the same parcel, never counted twice.
+    Errors #1, #2, #5: a casual sum of parcels with several times the listing's front is not the lot."""
+    k = caba["caba"]
+    pin = {"smp": "X-1", "superficie_total": "600", "frente": "17", "smp_anterior": "X-2A", "smp_siguiente": ""}
+    e = {"parcelas_linderas": {"smp_linderas": ["X-2a"]}}
+    fake = _FakeC3D({"X-2a": {"smp": "X-2A", "superficie_total": "970", "frente": "20"},
+                     "X-2A": {"smp": "X-2A", "superficie_total": "970", "frente": "20"}}, {})
+    assert motor_caba.match_parcels(pin, e, 2540, fake, k) is None                 # 600 + 970 + 970 needs 007A twice
+    assert motor_caba.match_parcels(pin, e, 1570, fake, k)["tipo"] == "varias"      # 600 + 970, no front stated
+    assert motor_caba.match_parcels(pin, e, 1570, fake, k, front=8) is None         # 37 m of front for an 8 m lot
+
+
+def test_caba_listed_surface_is_the_catastro_covered_area(caba):
+    """CABA error #10 (24/11/2026): 'Casa en Palermo Soho', 365 m2 tot. / 345 cub. on Cabrera 5246, a 200 m2 lot with
+    354 m2 covered in the catastro. The listing's surface is the covered area: the lot is the catastro's, never the
+    330 m2 neighbour on Godoy Cruz that happened to fit the 365."""
+    k = caba["caba"]
+    r = {"direccion": "José A. Cabrera al 5200", "superficie_cubierta_m2": 345}
+    pin = {"direccion": "CABRERA, JOSE A. 5246", "superficie_total": "200.00", "superficie_cubierta": "354.00"}
+    assert motor_caba.listed_covered(r, pin, 365, k)
+    assert not motor_caba.listed_covered({**r, "direccion": "Godoy Cruz 1500"}, pin, 365, k)      # another street
+    assert not motor_caba.listed_covered(r, {**pin, "superficie_total": "370"}, 365, k)          # the lot is the surface
+    # error #9: the neighbour on the listing's street whose covered m2 is the listing's, not the one closest in lot
+    p = {"smp": "019-008-017B", "direccion": "GASCON 1269", "superficie_total": "345", "frente": "8.72",
+         "smp_anterior": "", "smp_siguiente": ""}
+    e = {"parcelas_linderas": {"smp_linderas": ["019-008-019", "019-008-020"]}}
+    fake = _FakeC3D({"019-008-019": {"smp": "019-008-019", "direccion": "CABRERA, JOSE A. 3965", "superficie_total": "594",
+                                     "superficie_cubierta": "962", "frente": "9.8"},
+                     "019-008-020": {"smp": "019-008-020", "direccion": "CABRERA, JOSE A. 3957", "superficie_total": "525",
+                                     "superficie_cubierta": "562", "frente": "8.66"}}, {})
+    g = motor_caba.match_parcels(p, e, 562, fake, k, None, {"direccion": "CABRERA 3959", "superficie_cubierta_m2": 562})
+    assert g["parcelas"][0][0]["smp"] == "019-008-020" and g.get("cubierta") and g["superficie"] == 525
+
+
+def test_caba_covered_rule_ignores_cross_streets_and_text_corrections(caba):
+    """Galpón #9 after the text fix (24/11/2026): 'CABRERA 3959. Entre Gascon y ...' is not on Gascón, and a surface
+    already corrected to the lot from the text is not the covered area of any parcel."""
+    k = caba["caba"]
+    gascon = {"direccion": "GASCON 1269", "superficie_total": "345", "superficie_cubierta": "503"}
+    r = {"direccion": "CABRERA 3959. Entre Gascon y F. AcuÑa De Figueroa", "superficie_cubierta_m2": 562}
+    assert not motor_caba.listed_covered(r, gascon, 525, k)
+    cabrera = {"direccion": "CABRERA, JOSE A. 3957", "superficie_total": "400", "superficie_cubierta": "520"}
+    assert motor_caba.listed_covered(r, cabrera, 525, k)
+    assert not motor_caba.listed_covered({**r, "superficie_aviso_m2": 562}, cabrera, 525, k)

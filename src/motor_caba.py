@@ -35,13 +35,16 @@ import time
 from collections import Counter
 from datetime import date
 from pathlib import Path
+from urllib.parse import urlencode
 
 import pyproj
 import requests
 
+from . import rentabilidad
 from .config import path
-from .dedupe import dedupe
-from .normalize import FIELDS, dolar_mep, from_mercadolibre, from_zonaprop, normalize
+from .locate import _street_tokens
+from .dedupe import dedupe, share_surface
+from .normalize import FIELDS, SEVERAL_LOTS, dolar_mep, from_mercadolibre, from_zonaprop, normalize
 
 MAPPERS = {"zonaprop": from_zonaprop, "mercadolibre": from_mercadolibre}
 # USIG geocodes in Gauss-Krüger Buenos Aires
@@ -62,7 +65,7 @@ COLUMNS = FIELDS + [
     "altura_unidad_m", "pisos", "planta_edificable_m2", "eficiencia_planta", "m2_sin_plusvalia", "m2_construibles", "incidencia_usd_m2", "plusvalia_uva", "uva_ars", "plusvalia_usd", "incidencia_total_usd_m2",
     "incidencia_ley6062_uva", "incidencia_referencia_usd_m2", "ratio_incidencia", "proteccion", "afectaciones",
     "gran_predio", "potencial_extra", "tipologia_portal",
-]
+] + rentabilidad.COLUMNS
 
 
 class Ciudad3D:
@@ -209,6 +212,24 @@ def _f(v) -> float:
         return 0.0
 
 
+def listed_covered(r: dict, q: dict, s: float, k: dict) -> bool:
+    """The listing's surface is the covered area of catastro parcel q (CABA error #10, Gonzalo 24/11/2026: "Casa
+    en Palermo Soho" with 365 m2 tot. / 345 cub. on a 200 m2 lot whose catastro covered area is 354): q's covered
+    m2 within tolerancia_cubierta of the listing's total or covered surface, q's lot smaller, same street."""
+    if r.get("superficie_aviso_m2"):
+        return False                 # the surface was already corrected to the lot from the text (galpón #9)
+    cov, lot = _f(q.get("superficie_cubierta")), _f(q.get("superficie_total"))
+    tol = k.get("tolerancia_cubierta", 0.05)
+    if not cov or not lot or lot > (1 - tol) * s:      # galpón #9: 562 m2 covered on a 525 lot
+        return False
+    if not any(v and abs(cov - v) <= tol * v for v in (s, _f(r.get("superficie_cubierta_m2")))):
+        return False
+    street = re.split(r"\b(?:entre|e/|esq(?:uina)?\.?)\s", r.get("direccion") or "", flags=re.I)[0]   # not the cross streets
+    mine = _street_tokens(re.sub(r"\d+", " ", street))
+    theirs = _street_tokens(re.sub(r"\d+", " ", q.get("direccion") or ""))
+    return bool(mine & theirs)
+
+
 def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None, try_match: bool = False) -> None:
     """Fill r in place with the parcel, buildable m2, plusvalía, incidence and classification."""
     k = cfg["caba"]
@@ -250,19 +271,38 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None, try_match: bo
     r.update(smp=p["smp"], direccion_catastro=p.get("direccion", ""), superficie_catastro_m2=sup_cat or None,
              frente_catastro_m=_f(p.get("frente")) or None)
     r["parcela_coincide"] = bool(sup_cat) and abs(sup_cat - s) <= k["tolerancia_superficie"] * s
+    if r["parcela_coincide"] and (r.get("pin_generico") or r.get("flag_confianza") == "geocodificada"):
+        mine = _street_tokens(re.sub(r"\d+", " ", r.get("direccion") or ""))
+        theirs = _street_tokens(re.sub(r"\d+", " ", p.get("direccion") or ""))
+        if mine and theirs and not mine & theirs:     # CABA error #7: Formosa 50 fell on Av. La Plata 541
+            r["parcela_coincide"] = False
+            r["alertas"].append(f"parcela_en_otra_calle (catastro: {p.get('direccion', '')})")
+    if not r["parcela_coincide"] and listed_covered(r, p, s, k):
+        r["alertas"].append(f"superficie_es_la_cubierta (el aviso dice {s:.0f} m2; el catastro da "
+                            f"{_f(p.get('superficie_cubierta')):.0f} m2 cubiertos sobre un lote de {sup_cat:.0f} m2: "
+                            f"se usa el lote)")
+        s = r["superficie_m2"] = sup_cat
+        r["superficie_fuente"], r["parcela_coincide"] = "catastro (el aviso daba la cubierta)", True
     if r.get("pin_generico") and not r["parcela_coincide"]:
         r["motivo_descarte"] = "ubicacion_dudosa (pin genérico del portal y la parcela de la dirección no coincide)"
         return
     group, pending = None, False      # parcels of the listing when the pin's alone doesn't match its surface
     if not r["parcela_coincide"]:
         try:
-            group = match_parcels(p, e, s, c3d, k) if try_match else None
+            stated_front = _f(r.get("frente_m")) if r.get("frente_fuente") == "aviso" else None
+            group = match_parcels(p, e, s, c3d, k, stated_front, r) if try_match else None
         except RuntimeError as ex:
             pending = True                          # query cap or outage: tried again in the next run (cache)
             if "tope de consultas" not in str(ex):
                 c3d.errors.append(f"{r['id']}: {ex}")
         if group and group["tipo"] == "vecina":      # the pin fell on the next parcel: that one is the listing's
             p, e, sup_cat = group["parcelas"][0]
+            if group.get("cubierta"):                # ... and the listing's surface was its covered area
+                r["alertas"].append(f"superficie_es_la_cubierta (el aviso dice {s:.0f} m2; el catastro da "
+                                    f"{_f(p.get('superficie_cubierta')):.0f} m2 cubiertos sobre un lote de "
+                                    f"{sup_cat:.0f} m2: se usa el lote)")
+                s = r["superficie_m2"] = sup_cat
+                r["superficie_fuente"] = "catastro (el aviso daba la cubierta)"
             r.update(smp=p["smp"], direccion_catastro=p.get("direccion", ""), superficie_catastro_m2=sup_cat,
                      frente_catastro_m=_f(p.get("frente")) or None)
         if group:
@@ -376,7 +416,15 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None, try_match: bo
     # Gonzalo, 20/11/2026: without a reliable parcel, or in a special district with no FOT (own rules), at most casi
     special = any((d or {}).get("distrito_especifico") for d in e.get("distrito_especial") or []) or \
         bool(SPECIAL.match(r["distrito_cpu"] or ""))
+    # CABA errors #1, #2, #5, #6 (23/11/2026): with up to 6 neighbours, some sum of 2 or 3 parcels falls within ±5%
+    # of almost any inflated surface; "varias" only counts when the listing says it sells several lots
+    loose = bool(group) and group["tipo"] == "varias" and \
+        not SEVERAL_LOTS.search(f"{r.get('titulo') or ''} || {r.get('descripcion') or ''}")
+    if loose:
+        r["alertas"].append("suma_de_parcelas_sin_mencion (el aviso no dice que sean varios lotes: la superficie "
+                            "puede ser construible o cubierta; como mucho casi)")
     doubt = "parcela sin emparejar" if not matched else \
+        "suma de parcelas sin mención de varios lotes" if loose else \
         f"distrito especial {r['distrito_cpu']} sin FOT: reglas propias" if special and not r["fot_usado"] else ""
     if doubt and r["resultado"] == "oportunidad":
         r["resultado"], r["via"] = "casi", f"multifamiliar ({doubt})"
@@ -386,29 +434,50 @@ def evaluate(r: dict, c3d: Ciudad3D, cfg: dict, mep: float | None, try_match: bo
         r["resultado"], r["via"], r["motivo_descarte"] = "gran_predio", "gran_predio", ""
 
 
-def match_parcels(p: dict, e: dict, s: float, c3d: Ciudad3D, k: dict) -> dict | None:
+def match_parcels(p: dict, e: dict, s: float, c3d: Ciudad3D, k: dict, front: float | None = None,
+                  r: dict | None = None) -> dict | None:
     """The parcels of a listing whose surface doesn't match the pin's parcel (sample of 60 hits, 20/11/2026: 12%
     the pin fell on the next parcel, 43% several lots together). Neighbours: the side ones of Ciudad 3D and the
     previous/next of the catastro. Within tolerancia_superficie of the listing's surface, in this order:
       vecina   one neighbour alone (the pin was misplaced)
       varias   the pin's parcel + 1 or 2 neighbours (the closest total)
+    With the listing's stated front, the matched parcels must have a similar total front (CABA errors #1, #2, #5,
+    23/11/2026: inflated surfaces found casual sums of parcels with 3 to 5 times the front of the lot).
     -> {'tipo', 'parcelas': [(catastro, edificabilidad, superficie)], 'superficie'} or None."""
     tol = k["tolerancia_superficie"] * s
     sup0 = _f(p.get("superficie_total")) or _f(e.get("superficie_parcela"))
     smps = [*((e.get("parcelas_linderas") or {}).get("smp_linderas") or []), p.get("smp_anterior"), p.get("smp_siguiente")]
-    smps = [x for x in dict.fromkeys(smps) if x and x != p["smp"]][:k.get("vecinas_max", 6)]
+    seen = {p["smp"].upper()}
     neigh = []
     for smp in smps:
+        if not smp or smp.upper() in seen:
+            continue
+        seen.add(smp.upper())
+        if len(seen) > k.get("vecinas_max", 6) + 1:
+            break
         q = c3d.parcel_by_smp(smp)
-        if q and _f(q.get("superficie_total")):
+        if q and _f(q.get("superficie_total")) and (q.get("smp") or smp).upper() not in {x["smp"].upper() for x, _ in neigh}:
             neigh.append((q, _f(q["superficie_total"])))
-    single = [(abs(sq - s), q, sq) for q, sq in neigh if abs(sq - s) <= tol]
+
+    def front_ok(parcels):
+        fronts = [_f(x.get("frente")) for x in parcels]
+        if not front or not all(fronts):
+            return True
+        total = sum(fronts)
+        return 0.6 * front <= total <= max(1.6 * front, front + 8)
+    covered = [q for q, _ in neigh if r is not None and listed_covered(r, q, s, k)]
+    if len(covered) == 1:                       # a neighbour on the listing's street whose covered m2 is the listing's
+        q = covered[0]
+        return {"tipo": "vecina", "parcelas": [(q, c3d.buildable(q["smp"]), _f(q["superficie_total"]))],
+                "superficie": _f(q["superficie_total"]), "cubierta": True}
+    single = [(abs(sq - s), q, sq) for q, sq in neigh if abs(sq - s) <= tol and front_ok([q])]
     if single:
         _, q, sq = min(single, key=lambda t: t[0])
         return {"tipo": "vecina", "parcelas": [(q, c3d.buildable(q["smp"]), sq)], "superficie": sq}
     combos = [((q,), sq) for q, sq in neigh] + \
         [((a, b), sa + sb) for i, (a, sa) in enumerate(neigh) for b, sb in neigh[i + 1:]]
-    combos = [(abs(sup0 + extra - s), qs, sup0 + extra) for qs, extra in combos if abs(sup0 + extra - s) <= tol]
+    combos = [(abs(sup0 + extra - s), qs, sup0 + extra) for qs, extra in combos
+              if abs(sup0 + extra - s) <= tol and front_ok([p, *qs])]
     if not combos:
         return None
     _, qs, total = min(combos, key=lambda t: t[0])
@@ -500,6 +569,40 @@ def _mark_generic_pins(rows: list[dict], min_listings: int) -> None:
                 r["pin_generico"] = True
 
 
+def _far_from_barrio(rows: list[dict], km: float, min_listings: int = 5) -> dict[str, float]:
+    """id -> km from the median pin of the listings of its barrio, for the pins farther than `km`.
+    CABA error #1 (23/11/2026): a lot in Congreso with its pin on Av. Cabildo 2495, 8,5 km away."""
+    by_barrio = {}
+    for r in rows:
+        if r.get("lat") is not None and r.get("lon") is not None and r.get("barrio"):
+            by_barrio.setdefault(r["barrio"].strip().lower(), []).append(r)
+    far = {}
+    for group in by_barrio.values():
+        if len(group) < min_listings:
+            continue
+        lats, lons = sorted(r["lat"] for r in group), sorted(r["lon"] for r in group)
+        lat0, lon0 = lats[len(lats) // 2], lons[len(lons) // 2]
+        for r in group:
+            d = math.hypot((r["lat"] - lat0) * 111.0, (r["lon"] - lon0) * 92.0)
+            if d > km:
+                far[r["id"]] = d
+    return far
+
+
+def _demote_far_pins(rows: list[dict], far: dict[str, float]) -> None:
+    """An opportunity whose pin is far from its barrio and whose catastro street isn't the listing's: at most casi."""
+    for r in rows:
+        if r["resultado"] != "oportunidad" or r["id"] not in far:
+            continue
+        mine = _street_tokens(re.sub(r"\d+", " ", r.get("direccion") or ""))
+        theirs = _street_tokens(re.sub(r"\d+", " ", r.get("direccion_catastro") or ""))
+        if mine and mine & theirs:
+            continue                                 # a big barrio (Palermo): the address confirms the pin
+        r["resultado"], r["via"] = "casi", "multifamiliar (pin lejos del barrio del aviso)"
+        r["alertas"].append(f"pin_lejos_del_barrio ({far[r['id']]:.1f} km del centro de los avisos de "
+                            f"{r['barrio']}; catastro: {r.get('direccion_catastro') or 'sin dato'}): como mucho casi")
+
+
 def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> list[dict]:
     c3d = Ciudad3D(cfg)
     rows, seen = [], set()
@@ -510,6 +613,7 @@ def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> lis
                 continue
             seen.add(r["id"])
             rows.append(r)
+    share_surface(rows, cfg)                         # a lot corrected from one publication's text serves the others
     _mark_generic_pins(rows, cfg["caba"].get("pin_generico_min_avisos", 4))
     mep = None
     if any(not r["motivo_descarte"] for r in rows):
@@ -531,6 +635,7 @@ def process(items_by_portal: dict, cfg: dict, health: list | None = None) -> lis
             c3d.errors.append(f"aviso {r.get('id')}: {type(e).__name__}: {str(e)[:120]}")
         if i % 100 == 0:
             c3d.save()                               # a crash later doesn't lose the API answers
+    _demote_far_pins(rows, _far_from_barrio(rows, cfg["caba"].get("pin_lejos_barrio_km", 2.5)))
     c3d.limit = cfg["caba"]["max_consultas_por_corrida"]     # the reserve, for the neighbours of the hits
     order = {"oportunidad": 0, "gran_predio": 1, "casi": 2}     # the reserve goes to the opportunities first
     for r in sorted((x for x in rows if x["resultado"] in order), key=lambda x: order[x["resultado"]]):
@@ -559,7 +664,7 @@ def summary(n_raw: int, rows: list[dict], health: list[dict], cfg: dict) -> str:
               f"descartados: {res['descartado']}", "Descartes por motivo:"]
     lines += [f"  {k:32} {v}" for k, v in why.most_common()]
     for kind in ("oportunidad", "casi", "gran_predio"):
-        block = sorted((r for r in rows if r["resultado"] == kind), key=lambda r: r.get("ratio_incidencia") or 9)
+        block = sorted((r for r in rows if r["resultado"] == kind), key=_order(cfg))
         lines.append(f"--- {kind.upper()} ({len(block)}) ---")
         lines += [_line(r) for r in block]
     return "\n".join(lines)
@@ -574,17 +679,38 @@ def _line(r: dict) -> str:
             f"(ratio {r.get('ratio_incidencia')}) | {r['flag_confianza']}{rep} | {r.get('flags') or ''} | {r['url']}")
 
 
+def _order(cfg: dict):
+    """Expected profit per m2 first (rentabilidad.activo, Gonzalo 23/11/2026), else the incidence ratio."""
+    if (cfg.get("rentabilidad") or {}).get("activo"):
+        return rentabilidad.order_key
+    return lambda r: r.get("ratio_incidencia") or 9
+
+
 def _n(v, unit=""):
     return "" if v in (None, "") else (f"{v:,.0f}".replace(",", ".") + unit if isinstance(v, (int, float)) else str(v))
 
 
+def map_links(r: dict) -> str:
+    """Google Maps at the pin and the city's catastro map at the matched parcel (Gonzalo, 24/11/2026: he checks each
+    hit's lot, covered area and photo in mapa.buenosaires.gob.ar)."""
+    if not r.get("lat_usada"):
+        return ""
+    lat, lon = r["lat_usada"], r["lon_usada"]
+    out = f"<br><a href='https://www.google.com/maps?q={lat:.6f},{lon:.6f}'>mapa</a>"
+    q = {"lat": f"{lat:.6f}", "lng": f"{lon:.6f}", "zl": 18, "modo": "transporte"}
+    if r.get("direccion_catastro"):
+        q["dir"] = r["direccion_catastro"]
+    return out + f" · <a href='https://mapa.buenosaires.gob.ar/informacion/?{html.escape(urlencode(q))}'>catastro</a>"
+
+
 def render(rows: list[dict], health: list[dict], n_raw: int, cfg: dict) -> tuple[str, str]:
-    from .notify import _health, test_prefix
+    from .notify import RENT_COLUMNS, _health, rent_note, test_prefix
     today = date.today().strftime("%d/%m/%Y")
     k = cfg["caba"]
     parts, failed = _health(health, None)
     cols = [("Inmueble", lambda r: f"<a href='{html.escape(r['url'])}'>{html.escape(r['titulo'][:60])}</a><br>"
-                                   f"<span style='color:#666'>{html.escape(r['direccion'] or '')} · SMP {r.get('smp')}</span>"),
+                                   f"<span style='color:#666'>{html.escape(r['direccion'] or '')} · SMP {r.get('smp')}</span>"
+                                   f"{map_links(r)}"),
             ("Precio USD", lambda r: _n(r["precio_usd"])), ("m² terreno", lambda r: _n(r["superficie_m2"])),
             ("Unidad / pisos", lambda r: f"{r.get('altura_unidad_m')} m · {r.get('pisos')}"),
             ("m² construibles", lambda r: _n(r.get("m2_construibles"))),
@@ -592,6 +718,10 @@ def render(rows: list[dict], health: list[dict], n_raw: int, cfg: dict) -> tuple
             ("Incidencia c/plusvalía", lambda r: _n(r.get("incidencia_total_usd_m2"))),
             ("Referencia Ley 6062", lambda r: _n(r.get("incidencia_referencia_usd_m2"))),
             ("Ratio", lambda r: r.get("ratio_incidencia")), ("Flags", lambda r: html.escape(r.get("flags") or ""))]
+    profit = (cfg.get("rentabilidad") or {}).get("activo")
+    if profit:                       # Gonzalo, 23/11/2026: profit per m2 right after the listing
+        cols = cols[:1] + RENT_COLUMNS + cols[1:]
+        parts.append(rent_note(cfg))
 
     def table(block):
         if not block:
@@ -601,7 +731,7 @@ def render(rows: list[dict], health: list[dict], n_raw: int, cfg: dict) -> tuple
                        + "</tr>" for r in block)
         return f"<table style='border-collapse:collapse;font-size:13px'><tr>{head}</tr>{body}</table>"
 
-    by = lambda kind: sorted((r for r in rows if r["resultado"] == kind), key=lambda r: r.get("ratio_incidencia") or 9)  # noqa: E731
+    by = lambda kind: sorted((r for r in rows if r["resultado"] == kind), key=_order(cfg))  # noqa: E731
     opp, near, big = by("oportunidad"), by("casi"), by("gran_predio")
     parts += [f"<h2>Oportunidades multifamiliar ({len(opp)})</h2>",
               f"<p style='color:#666'>m² construibles &gt; {k['m2_construibles_min']} e incidencia con plusvalía ≤ "
@@ -620,8 +750,8 @@ def render(rows: list[dict], health: list[dict], n_raw: int, cfg: dict) -> tuple
 
 def run_caba(items: dict, health: list, run_dir: Path, cfg: dict, args) -> None:
     rows = dedupe(process(items, cfg, health), cfg)
-    rows.sort(key=lambda r: ({"oportunidad": 0, "casi": 1, "gran_predio": 2}.get(r["resultado"], 3),
-                             r.get("ratio_incidencia") or 9))
+    rentabilidad.apply_all(rows, cfg)
+    rows.sort(key=lambda r: ({"oportunidad": 0, "casi": 1, "gran_predio": 2}.get(r["resultado"], 3), _order(cfg)(r)))
     with open(run_dir / "resultado.csv", "w", newline="", encoding="utf-8-sig") as fh:
         w = csv.DictWriter(fh, fieldnames=COLUMNS, extrasaction="ignore")
         w.writeheader()

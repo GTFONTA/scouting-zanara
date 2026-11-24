@@ -1,0 +1,56 @@
+municipio,zona,usd_m2_general,usd_m2_a_estrenar,fuente
+caba,Puerto Madero,6148,,Migliorisi oct-2026 (publicación; usados y nuevos)
+caba,Palermo,3437,4242,AEstrenar 29/08/2026 (37 emprendimientos) / Migliorisi oct-2026
+caba,Núñez,3399,4109,AEstrenar 29/08/2026 (8 emprendimientos) / Migliorisi oct-2026
+caba,Belgrano,3290,3838,AEstrenar 29/08/2026 (21 emprendimientos) / Migliorisi oct-2026
+caba,Colegiales,3091,3568,AEstrenar 29/08/2026 (7 emprendimientos) / Migliorisi oct-2026
+caba,Saavedra,2890,,Migliorisi oct-2026
+caba,Chacarita,2843,,Migliorisi oct-2026
+caba,Coghlan,2842,,Migliorisi oct-2026
+caba,Recoleta,2804,4420,AEstrenar 29/08/2026 (8 emprendimientos) / Migliorisi oct-2026
+caba,Villa Urquiza,2794,,Migliorisi oct-2026
+caba,Villa Devoto,2752,,Migliorisi oct-2026
+caba,Villa Ortúzar,2643,,Migliorisi oct-2026
+caba,Retiro,2614,,Migliorisi oct-2026
+caba,Villa Crespo,2540,3005,AEstrenar 29/08/2026 (7 emprendimientos) / Migliorisi oct-2026
+caba,Parque Chas,2452,,Migliorisi oct-2026
+caba,Caballito,2420,3406,AEstrenar 29/08/2026 (3 emprendimientos) / Migliorisi oct-2026
+caba,Villa Pueyrredón,2307,,Migliorisi oct-2026
+caba,Almagro,2298,3269,AEstrenar 29/08/2026 (3 emprendimientos) / Migliorisi oct-2026
+caba,Villa del Parque,2273,,Migliorisi oct-2026
+caba,Parque Chacabuco,2254,,Migliorisi oct-2026
+caba,Agronomía,2243,,Migliorisi oct-2026
+caba,Monserrat,2215,,Migliorisi oct-2026
+caba,San Telmo,2203,,Migliorisi oct-2026
+caba,Villa Luro,2151,,Migliorisi oct-2026
+caba,Barracas,2141,,Migliorisi oct-2026
+caba,Santa Rita,2140,,Migliorisi oct-2026
+caba,Monte Castro,2110,,Migliorisi oct-2026
+caba,Liniers,2096,,Migliorisi oct-2026
+caba,Boedo,2078,,Migliorisi oct-2026
+caba,Paternal,2071,,Migliorisi oct-2026
+caba,Mataderos,2065,,Migliorisi oct-2026
+caba,Villa Real,2008,,Migliorisi oct-2026
+caba,Flores,1996,,Migliorisi oct-2026
+caba,Villa General Mitre,1976,,Migliorisi oct-2026
+caba,Vélez Sarsfield,1895,,Migliorisi oct-2026
+caba,San Cristóbal,1865,,Migliorisi oct-2026
+caba,Constitución,1839,,Migliorisi oct-2026
+caba,Versalles,1834,,Migliorisi oct-2026
+caba,San Nicolás,1801,,Migliorisi oct-2026
+caba,Balvanera,1786,,Migliorisi oct-2026
+caba,Villa Riachuelo,1761,,Migliorisi oct-2026
+caba,Parque Patricios,1754,,Migliorisi oct-2026
+caba,Floresta,1707,,Migliorisi oct-2026
+caba,Parque Avellaneda,1665,,Migliorisi oct-2026
+caba,La Boca,1583,,Migliorisi oct-2026
+caba,Nueva Pompeya,1501,,Migliorisi oct-2026
+caba,Lugano,1056,,Migliorisi oct-2026
+san_isidro,San Isidro,2647,,tasacionesdeinmuebles.com.ar ago/sep-2026 (mediana de avisos de Zonaprop; promedio de los dos meses)
+san_isidro,Martínez,2610,,tasacionesdeinmuebles.com.ar ago/sep-2026 (promedio de los dos meses)
+san_isidro,Acassuso,2575,,tasacionesdeinmuebles.com.ar ago/sep-2026 (promedio de los dos meses)
+san_isidro,Beccar,2287,,tasacionesdeinmuebles.com.ar ago/sep-2026 (promedio de los dos meses)
+san_isidro,Boulogne Sur Mer,2287,,sin dato propio (muestra chica): se usa el de Beccar
+san_isidro,Villa Adelina,2287,,sin dato propio (muestra chica): se usa el de Beccar
+tigre,_partido,2702,,UdeSA + Mercado Libre ago-2026 (partido entero; Nordelta lo sube)
+san_fernando,_partido,2012,,tasacionesdeinmuebles.com.ar ago/sep-2026 (localidad San Fernando; promedio de los dos meses)

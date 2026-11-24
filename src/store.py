@@ -29,7 +29,9 @@ OPP_COLUMNS = [
     "novedad", "precio_anterior", "fecha_ultima_vista", "seccion", "portal", "titulo", "alertas", "id", "ids_duplicados",
 ]
 OPP_COLUMNS_PRODUCTS = [
-    "fecha_deteccion", "clasificacion", "incidencia", "via", "mejor_producto", "unidades_por_derecho",
+    "fecha_deteccion", "clasificacion", "incidencia",   # incidencia stays in column C: its colour rule is there
+    "rentabilidad_usd_m2", "rentabilidad_pct", "rentabilidad_por", "costo_total_usd_m2", "venta_usd_m2", "venta_fuente",
+    "via", "mejor_producto", "unidades_por_derecho",
     "unidades_con_aprobacion", "usd_por_unidad_derecho", "valor_lote_estimado", "ratio_compra_reventa",
     "unidades_loteo", "comparables", "m2_construibles", "precio_usd", "superficie_m2", "frente_m", "frente_fuente",
     "zona", "fot", "fot_fuente",
@@ -85,6 +87,10 @@ def _row_values(r: dict, today: str) -> dict:
                                  "usd_por_unidad_derecho", "valor_lote_estimado", "ratio_compra_reventa",
                                  "unidades_loteo", "comparables", "frente_m", "frente_fuente", "zona_unidades",
                                  "flags", "partidas_catastro")},
+        # expected profit per m2 (rentabilidad.activo, Gonzalo 23/11/2026)
+        "rentabilidad_usd_m2": r.get("rent_diferencia_usd_m2"), "rentabilidad_pct": r.get("rent_margen_pct"),
+        "rentabilidad_por": r.get("rent_por") or "", "costo_total_usd_m2": r.get("rent_costo_total_usd_m2"),
+        "venta_usd_m2": r.get("rent_venta_usd_m2"), "venta_fuente": r.get("rent_venta_fuente") or "",
     }
 
 

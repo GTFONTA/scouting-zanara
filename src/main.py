@@ -15,10 +15,10 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
-from . import comparables, fetch
+from . import comparables, fetch, rentabilidad
 from .catastro import Catastro
 from .config import DEFAULT_MUNICIPIO, ROOT, load_config, path
-from .dedupe import dedupe, share_front
+from .dedupe import dedupe, share_front, share_surface
 from .evaluate import address_unknown, evaluate, front_matters, lot_product, sections
 from .flags import flags
 from .locate import Locator
@@ -40,7 +40,7 @@ COLUMNS = FIELDS + [
     "ratio_compra_reventa",
     "requiere_cloaca", "gran_predio",
     "tipologia_portal",
-]
+] + rentabilidad.COLUMNS
 MAPPERS = {"zonaprop": from_zonaprop, "mercadolibre": from_mercadolibre}
 
 
@@ -72,6 +72,7 @@ def process(items_by_portal: dict[str, list[dict]], cfg: dict, comps_history: li
                 continue
             seen.add(r["id"])
             normalized.append(r)
+    share_surface(normalized, cfg)                   # a lot corrected from one publication's text serves the others
     comps, medians = [], {}
     if p["activo"]:                                  # small lots, before the surface prefilter drops them
         comps = comparables.collect(normalized, locator, cfg)
@@ -201,6 +202,17 @@ def download(cfg: dict, run_dir: Path) -> tuple[dict, list[dict]]:
     return items, health
 
 
+def finish(processed: list[dict], cfg: dict) -> list[dict]:
+    """Merge the publications of the same property, add the expected profit and order: opportunities, casi, large
+    lots; within each, the best profit per m2 first (rentabilidad.activo) or the lowest incidence."""
+    rows = dedupe(processed, cfg)
+    rentabilidad.apply_all(rows, cfg)
+    by_profit = (cfg.get("rentabilidad") or {}).get("activo")
+    rows.sort(key=lambda r: ({"oportunidad": 0, "casi": 1, "gran_predio": 2}.get(r["resultado"], 3), address_unknown(r),
+                             rentabilidad.order_key(r) if by_profit else r.get("incidencia_usd_m2") or 1e9))
+    return rows
+
+
 def run(args) -> None:
     cfg = load_config(args.municipio)
     m = cfg["municipio"]
@@ -232,9 +244,7 @@ def run(args) -> None:
         except Exception as e:                            # noqa: BLE001 - this week's small lots are still used
             print(f"No se pudo leer el historial de comparables de la Sheet: {e}")
     processed, comps = process(items, cfg, history, health)
-    rows = dedupe(processed, cfg)
-    rows.sort(key=lambda r: ({"oportunidad": 0, "casi": 1, "gran_predio": 2}.get(r["resultado"], 3), address_unknown(r),
-                             r.get("incidencia_usd_m2") or 1e9))
+    rows = finish(processed, cfg)
     out = run_dir / "resultado.csv"
     with open(out, "w", newline="", encoding="utf-8-sig") as fh:
         w = csv.DictWriter(fh, fieldnames=COLUMNS, extrasaction="ignore")

@@ -20,8 +20,10 @@ caba:
   espera_recupero_s: 180
   recuperos_max: 3
   pin_generico_min_avisos: 4    # el mismo punto en 4+ avisos con direcciones distintas = pin por defecto del portal
+  pin_lejos_barrio_km: 2.5      # pin a más de 2,5 km de la mediana de los avisos de su barrio, sin la calle del catastro: como mucho casi (error #1)
   bbox: [[-58.535, -58.33], [-34.71, -34.52]]   # [lon min, lon max], [lat min, lat max] de la Ciudad
   tolerancia_superficie: 0.15   # parcela del pin con superficie ±15% de la del aviso = es la del aviso
+  tolerancia_cubierta: 0.05     # superficie del aviso = cubierta del catastro ±5% (misma calle, lote más chico) = se usa el lote
   m2_construibles_min: 1000
   # incidencia con plusvalía / incidencia de la Ley 6062 del distrito (valuación oficial del m2 de suelo)
   ratio_oportunidad: 0.8

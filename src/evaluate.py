@@ -34,9 +34,13 @@ def address_unknown(r: dict) -> bool:
     return r.get("flag_confianza") == "aproximada_barrio"
 
 
-def sections(rows: list[dict]) -> dict[str, list[dict]]:
+def sections(rows: list[dict], by_profit: bool = False) -> dict[str, list[dict]]:
     """Fase 4 blocks, in the mail's order. A listing appears once: multifamiliar before loteo, and a large lot
-    that is already an opportunity stays in its opportunity block."""
+    that is already an opportunity stays in its opportunity block. by_profit (rentabilidad.activo): every block
+    ordered by the expected profit per m2 instead."""
+    if by_profit:
+        from .rentabilidad import order_key
+        return {k: sorted(v, key=order_key) for k, v in sections(rows).items()}
     shown = [r for r in rows if r["resultado"] in ("oportunidad", "casi", "gran_predio")]
     located = [r for r in shown if not address_unknown(r)]
     opp = [r for r in located if r["resultado"] == "oportunidad"]

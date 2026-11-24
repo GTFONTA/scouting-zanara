@@ -54,17 +54,13 @@ def reprocess(run: str, monkeypatch, tmp_path: Path) -> dict[str, str]:
     cache = offline(monkeypatch, tmp_path)
     from src import main
     from src.config import load_config
-    from src.dedupe import dedupe
-    from src.evaluate import address_unknown
     from src.notify import render_report
 
     cfg = load_config()
     cfg["productos"]["catastro"]["cache"] = str(cache)          # absolute: path() keeps it as is
     items, health = load_items(run)
     processed, _ = main.process(items, cfg, [], health)
-    rows = dedupe(processed, cfg)
-    rows.sort(key=lambda r: ({"oportunidad": 0, "casi": 1, "gran_predio": 2}.get(r["resultado"], 3), address_unknown(r),
-                             r.get("incidencia_usd_m2") or 1e9))
+    rows = main.finish(processed, cfg)
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=main.COLUMNS, extrasaction="ignore", lineterminator="\n")
     w.writeheader()
