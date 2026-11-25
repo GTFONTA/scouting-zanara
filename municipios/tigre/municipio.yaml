@@ -91,6 +91,7 @@ portales:
       - https://www.zonaprop.com.ar/bodegas-galpones-venta-tigre-mas-400-m2.html
       - https://www.zonaprop.com.ar/edificios-venta-tigre.html
   mercadolibre:
+    max_detalles_por_corrida: 500  # como CABA: las fichas se reparten en varias tandas (src/agenda.py)
     busquedas:
       - url: https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/tigre/_TOTAL*AREA_600-*
         tipologia: terreno
@@ -98,6 +99,9 @@ portales:
         tipologia: casa
       - url: https://inmuebles.mercadolibre.com.ar/depositos-y-galpones/venta/bsas-gba-norte/tigre/_TOTAL*AREA_400-*
         tipologia: galpon
+
+incremental:                       # Gonzalo, 24/11/2026: primera descarga en tandas de 45 páginas, como CABA
+  activo: true                     # (src/agenda.py corre las tandas mientras la PC está prendida)
 
 sheet:
   id: ""                           # sin Sheet propia todavía: corre con --sin-sheet

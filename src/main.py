@@ -202,6 +202,11 @@ def download(cfg: dict, run_dir: Path) -> tuple[dict, list[dict]]:
     return items, health
 
 
+def write_final_health(run_dir: Path, health: list) -> None:
+    """salud_final.json: the portals plus the services the evaluation used (ARBA, Ciudad 3D), for src/agenda.py."""
+    (run_dir / "salud_final.json").write_text(json.dumps(health, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
 def finish(processed: list[dict], cfg: dict) -> list[dict]:
     """Merge the publications of the same property, add the expected profit and order: opportunities, casi, large
     lots; within each, the best profit per m2 first (rentabilidad.activo) or the lowest incidence."""
@@ -253,6 +258,7 @@ def run(args) -> None:
     n_raw = sum(len(v) for v in items.values())
     text = summary(n_raw, rows, health, cfg)
     (run_dir / "resumen.txt").write_text(text, encoding="utf-8")
+    write_final_health(run_dir, health)
     print(text)
     print(f"\n-> {out}")
 

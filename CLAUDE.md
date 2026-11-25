@@ -105,3 +105,20 @@ Registro en `municipios/caba/REGISTRO_ERRORES.md`. Muchos avisos cargan como sup
 
 ## Rentabilidad esperada por m² (Gonzalo 23/11/2026, `rentabilidad.activo`)
 Cada hit (oportunidad, casi, gran predio) muestra en el mail y la Sheet: incidencia del terreno, costo total, venta y diferencia (rentabilidad) por m². Dentro de cada sección se ordena por esa diferencia. **No cambia qué es oportunidad.** `src/rentabilidad.py`. Multifamiliar (CABA siempre), por m² vendible: incidencia = (precio + plusvalía) ÷ m² construibles × `fraccion_vendible` (1,0); costo total = incidencia + `margen.costo_obra_usd_m2.multifamiliar` (1.800); venta = USD/m² a estrenar del barrio (CABA) o de la localidad (PBA) en `data/valores_venta.csv` (informes públicos: Migliorisi, AEstrenar, tasacionesdeinmuebles, UdeSA; sin dato de a estrenar, el general × `premio_a_estrenar` 1,25; Tigre y San Fernando a nivel partido). Loteo, por m² de terreno: venta = lote chico de la localidad (`mediana_usd_m2_lote`; con calle interna o acceso común, × 0,75); costo = precio ÷ superficie + 30 (calle interna) o `costo_loteo_abierto_usd_m2` (0). Nombres de barrio de los portales → tabla con `alias_zonas` y por prefijo; sin coincidencia, la mediana del municipio (se marca "zona sin dato"). Es un paso intermedio de la Fase 5: la tabla se reemplaza por el registro de comparables propio cuando exista. `false` = orden por incidencia como antes.
+
+## Corridas automáticas (Gonzalo, 24/11/2026)
+- La tarea "Scouting automático" del Programador de tareas corre `correr_automatico.ps1` al iniciar sesión, al desbloquear y cada hora. Esa tarea llama a `src/agenda.py`, que decide si toca una corrida y, si toca, corre una sola, con `correr_semanal.ps1 -Municipio <slug>`. San Isidro sigue con su tarea de los lunes 10:30. La tarea nocturna "Scouting CABA noche" quedó deshabilitada (no borrada).
+- Reglas (`config.yaml`, `agenda:`):
+  - nunca dos corridas a la vez;
+  - el lunes, nada antes de San Isidro;
+  - un municipio por día con tráfico a los portales; en primera descarga, hasta 2 tandas por día, separadas 4 h;
+  - orden: `primera_descarga` (CABA → Tigre → San Fernando, cada uno hasta terminar); después, la `rotacion` semanal (lunes San Isidro, martes CABA, miércoles Tigre, jueves San Fernando; viernes libre para Vicente López);
+  - un municipio con 3 corridas seguidas que solo fallaron se saltea.
+- Una corrida "deja algo para la próxima" si su `salud_final.json` dice:
+  - primera descarga en curso;
+  - fichas pendientes;
+  - consultas que quedan para la próxima corrida;
+  - se dejó de consultar;
+  - un portal con falla.
+- Tigre y San Fernando usan la descarga incremental (45 páginas por tanda) y abren hasta 500 fichas de Mercado Libre por tanda, como CABA.
+- `py -3 -m src.agenda --ver` dice qué haría y por qué. Las decisiones quedan en `runs/agenda.log`.

@@ -759,6 +759,8 @@ def run_caba(items: dict, health: list, run_dir: Path, cfg: dict, args) -> None:
     n_raw = sum(len(v) for v in items.values())
     text = summary(n_raw, rows, health, cfg)
     (run_dir / "resumen.txt").write_text(text, encoding="utf-8")
+    from .main import write_final_health
+    write_final_health(run_dir, health)
     print(text)
     subject, body = render(rows, health, n_raw, cfg)
     (run_dir / "mail.html").write_text(f"<h1>{html.escape(subject)}</h1>{body}", encoding="utf-8")

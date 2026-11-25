@@ -324,6 +324,9 @@ def fetch_mercadolibre(cfg: dict, run_dir: Path, cache_path: Path) -> tuple[list
                                   or (price >= c["incidencia_casi_max_usd"] * total * z["fot_max"] and not big)):
             continue                      # can't be a hit even with the best zone: no need for the detail
         todo.append(card)
+    if len(todo) > p["max_detalles_por_corrida"]:       # the rest waits for the next run (src/agenda.py reads this)
+        health.warnings.append(f"fichas pendientes: {len(todo) - p['max_detalles_por_corrida']} quedan para la "
+                               f"próxima corrida")
     todo = todo[:p["max_detalles_por_corrida"]]
     print(f"  mercadolibre: {len(todo)} fichas nuevas para abrir ({len(cache)} ya en caché)")
     ficha_errors = 0

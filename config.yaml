@@ -150,6 +150,19 @@ incremental:
   sufijo_recientes: "-orden-publicado-descendente"   # SIN PROBAR: verificar en la primera corrida de CABA
   estado: data/incremental_zonaprop{sufijo}.json.gz
 
+agenda:
+  # Gonzalo, 24/11/2026: las corridas se hacen solas mientras la PC está prendida (src/agenda.py, tarea "Scouting
+  # automático": al iniciar sesión, al desbloquear y cada hora). San Isidro sigue con su tarea de los lunes 10:30.
+  primera_descarga: [caba, tigre, san_fernando]   # en este orden, cada una hasta terminar su primera descarga
+  rotacion: [san_isidro, caba, tigre, san_fernando, null, null, null]   # lunes a domingo, una vez terminadas
+                                   # (viernes libre: Vicente López cuando esté)
+  tandas_por_dia: 2                # en primera descarga, hasta 2 tandas del mismo municipio por día...
+  horas_entre_tandas: 4            # ...separadas al menos 4 horas
+  horas_max_corrida: 4             # una corrida sin terminar más vieja que esto se da por cortada
+  espera_san_isidro_max_h: 36      # después del lunes 10:30, cuánto esperar la corrida de San Isidro
+  reintentos_falla: 3              # 3 corridas seguidas solo con fallas (sin avance): se saltea y sigue la cola
+  log: runs/agenda.log
+
 rentabilidad:
   # Gonzalo, 23/11/2026: cada hit muestra incidencia, costo total, venta y diferencia por m², y los listados se
   # ordenan por esa diferencia. Valor de venta: tabla de informes públicos hasta que se llene el registro propio
