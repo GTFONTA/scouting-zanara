@@ -10,12 +10,14 @@ Usage:
     python tools/municipio_pba.py tigre
     python tools/municipio_pba.py san_fernando
     python tools/municipio_pba.py tigre --solo-normativa    # only normativa_zonas.csv, from the saved raw layer
+    python tools/municipio_pba.py tigre --solo-calles       # only calles.geojson (one Overpass query)
 Output (municipios/<slug>/):
     fuentes/urbasig_zonificacion.geojson   raw layer, as downloaded
     zonas.geojson                          one feature per zone polygon: {zona}
     normativa_zonas.csv                    same columns as data/normativa_zonas.csv (San Isidro), from UrbaSIG
     localidades.geojson                    {barrio}: OSM localidades, clipped to the zoned (continental) area
-    calles.geojson                         {nombre}: named OSM streets of the partido
+    calles.geojson                         {nombre, tipo, ancho}: named OSM streets of the partido (tipo = OSM
+                                           highway class, ancho = OSM width tag when mapped: Ord. 4448 art. 12 k)
 
 How a UrbaSIG zone becomes a normativa row (ZANARA's products, values of each partido; decisions to validate
 with Gonzalo, listed in the municipio's NORMATIVA.md):
@@ -46,7 +48,13 @@ NO_HOUSING = "Sin vivienda como producto"
 COLUMNS = ["zona", "grupo", "relevancia", "fot", "fot_max", "fos", "altura_max", "multifamiliar", "regla_unidades",
            "m2_terreno_por_unidad", "ancho_min_unidad", "sup_propia_min_unidad", "acceso_directo_requerido",
            "subdiv_ancho_min", "subdiv_sup_min", "densidad_neta", "densidad_neta_potencial", "densidad_ue", "flags",
-           "fuente", "notas"]
+           "fuente", "notas",
+           # setbacks of the zone sheet, for the effective FOS (Tigre, Gonzalo 24/11/2026; empty = unknown):
+           #   frente m; fondo (L - base)/2, at least 3 m and at most 15 m (residential) / 20 m (Código, art. 46);
+           #   fondo_min: the sheet lets the building take the rear setback down to this to complete the FOS;
+           #   lateral: max(min, % of the width) on one side (none on lots up to 11 m), or `bilateral` m each side
+           "retiro_frente", "retiro_fondo_base", "retiro_fondo_min", "retiro_lateral_pct", "retiro_lateral_min",
+           "retiro_bilateral"]
 ANCHO_CASA_AGRUPADA = 5
 
 PARTIDOS = {
@@ -85,6 +93,61 @@ PARTIDOS = {
                     "regla_unidades": "Densidad neta de la zona (multifamiliar)", "flags+": "requiere_cloaca_multifamiliar"}),
             ("R5", {"multifamiliar": "Sí", "densidad_neta": 140, "densidad_neta_potencial": 400,
                     "regla_unidades": "Densidad neta de la zona (multifamiliar)", "flags+": "requiere_cloaca_multifamiliar"}),
+            # Gonzalo, 24/11/2026 (GUIA_NORMATIVA.md, 10.7 #2): inside Nordelta's neighbourhoods (UR 4.x) the private
+            # rules allow one house per lot; every UR zone carries the flag to check Nordelta's plan
+            ("UR 4", {"multifamiliar": "No", "regla_unidades": "Unifamiliar por parcela", "relevancia": "Media",
+                      "flags+": "verificar_reglamento_nordelta"}),
+            ("UR", {"flags+": "verificar_reglamento_nordelta"}),
+        ],
+        # Setbacks of the zone sheets (planillas; GUIA_NORMATIVA.md, section 2). Prefix -> columns, first match wins.
+        "retiros": [
+            ("TC", {"retiro_frente": 5, "retiro_fondo_base": 20, "retiro_bilateral": 4}),     # tower on a base
+            ("Tr", {"retiro_frente": 5, "retiro_fondo_base": 20, "retiro_bilateral": 4}),
+            ("C6", {"retiro_frente": 3, "retiro_fondo_base": 15}),
+            ("C", {"retiro_frente": 0, "retiro_fondo_base": 15}),
+            ("R6", {"retiro_frente": 0, "retiro_fondo_base": 15, "retiro_fondo_min": 10}),
+            ("R1u", {"retiro_frente": 3, "retiro_fondo_base": 15, "retiro_fondo_min": 5, "retiro_lateral_pct": 20,
+                     "retiro_lateral_min": 2.5}),
+            ("R2", {"retiro_frente": 3, "retiro_fondo_base": 15, "retiro_fondo_min": 5, "retiro_lateral_pct": 25,
+                    "retiro_lateral_min": 2.5}),
+            ("R3", {"retiro_frente": 3, "retiro_fondo_base": 15}),
+            ("R4", {"retiro_frente": 3, "retiro_fondo_base": 15, "retiro_fondo_min": 5, "retiro_lateral_pct": 20,
+                    "retiro_lateral_min": 2.5}),
+            ("R5", {"retiro_frente": 3, "retiro_fondo_base": 15}),
+            ("R7", {"retiro_frente": 3, "retiro_fondo_base": 15, "retiro_lateral_pct": 20, "retiro_lateral_min": 2.5}),
+            ("R8", {"retiro_frente": 3, "retiro_fondo_base": 15, "retiro_lateral_pct": 20, "retiro_lateral_min": 2.5}),
+            ("RM", {"retiro_frente": 3, "retiro_fondo_base": 15, "retiro_lateral_pct": 20, "retiro_lateral_min": 2.5}),
+            ("RP", {"retiro_frente": 6, "retiro_fondo_base": 20, "retiro_fondo_min": 6, "retiro_bilateral": 3}),
+        ],
+        # Rows that the layer doesn't give (Gonzalo, 24/11/2026, GUIA_NORMATIVA.md 10.7 #1 and #2):
+        #   R1a / R3b  UrbaSIG marks them as gated neighbourhoods, but the Ord. 4448 gives them height in some
+        #              sectors (Benavídez, Dique Luján): there they are valued with the R1 / R3 sheets. The flag
+        #              solo_en_sector_4448 makes the engine use the row only inside one of those polygons.
+        #   UE 8       Nordelta's Centro Cívico (UM2 of the 4448, PB+12): the indicators of UR 1 C until the plans
+        #              particularizados (Ord. 3982/22, 4077/23, 4126/23) are read
+        "filas_extra": [
+            {"zona": "R1a", "grupo": "R1 (planilla) en sector de la Ord. 4448", "relevancia": "Alta", "fot": 1.2,
+             "fos": 0.6, "multifamiliar": "Sí", "regla_unidades": "Densidad neta de la zona (multifamiliar)",
+             "m2_terreno_por_unidad": 600, "ancho_min_unidad": 5, "subdiv_ancho_min": 15, "subdiv_sup_min": 600,
+             "densidad_neta": 100, "densidad_neta_potencial": 400,
+             "flags": "solo_en_sector_4448;requiere_cloaca_multifamiliar",
+             "fuente": "planilla R1 tigre.gob.ar + Ord. 4448/26 art. 4 y 5 (24/11/2026)",
+             "notas": "Multifamiliar con agua y cloaca (planilla R1, 11.2 d); solo dentro de los sectores R1a con altura",
+             "retiro_frente": 3, "retiro_fondo_base": 20, "retiro_fondo_min": 6, "retiro_lateral_pct": 20,
+             "retiro_lateral_min": 2.5},
+            {"zona": "R3b", "grupo": "R3 (planilla) en sector de la Ord. 4448", "relevancia": "Alta", "fot": 1.2,
+             "fot_max": 1.8, "fos": 0.6, "multifamiliar": "Sí", "regla_unidades": "Densidad neta de la zona (multifamiliar)",
+             "m2_terreno_por_unidad": 300, "ancho_min_unidad": 5, "subdiv_ancho_min": 12, "subdiv_sup_min": 300,
+             "densidad_neta": 140, "densidad_neta_potencial": 400,
+             "flags": "solo_en_sector_4448;premio_ley_8912;requiere_cloaca_multifamiliar",
+             "fuente": "planilla R3 tigre.gob.ar + Ord. 4448/26 art. 4 (24/11/2026)",
+             "notas": "Multifamiliar con agua y cloaca (planilla R3, 11.1 d); solo dentro del sector R3b PB+5",
+             "retiro_frente": 3, "retiro_fondo_base": 15},
+            {"zona": "UE 8", "grupo": "Centro Cívico Nordelta (UM2, Ord. 4448/26 art. 11)", "relevancia": "Alta",
+             "fot": 3, "fos": 0.6, "multifamiliar": "Sí", "regla_unidades": "Densidad neta de la zona (multifamiliar)",
+             "densidad_neta": 2000, "flags": "verificar_plan_centro_civico",
+             "fuente": "indicadores de UR 1 C (UrbaSIG) a falta de los planes particularizados (24/11/2026)",
+             "notas": "Planes particularizados Ord. 3982/22, 4077/23 y 4126/23 sin leer"},
         ],
     },
     "san_fernando": {
@@ -189,13 +252,44 @@ def zone_row(name: str, props: list[dict], conf: dict) -> dict:
         if row["multifamiliar"] == "Sí":
             row["relevancia"] = "Alta"
         row["fuente"] += " + planilla tigre.gob.ar (19/11/2026)"
+    setbacks = next((cols for pre, cols in conf.get("retiros", []) if name.startswith(pre)), None) if housing else None
+    for col, value in (setbacks or {}).items():
+        row[col] = _num(value) if value else "0"
     return row
 
 
-def main(slug: str, only_normativa: bool = False) -> None:
+def extra_row(spec: dict) -> dict:
+    """A row the layer doesn't give (conf['filas_extra']), with the same columns."""
+    row = dict.fromkeys(COLUMNS, "")
+    row.update({"acceso_directo_requerido": "no"})
+    for col, value in spec.items():
+        row[col] = (_num(value) if value else "0") if isinstance(value, (int, float)) else value
+    return row
+
+
+def streets(slug: str, out: Path) -> int:
+    conf = PARTIDOS[slug]
+    ways = overpass(f"""[out:json][timeout:240];
+rel({conf['osm']});map_to_area->.p;
+way(area.p)["highway"]["name"];
+out geom;""")
+    feats = [{"type": "Feature",
+              "geometry": {"type": "LineString", "coordinates": [[p["lon"], p["lat"]] for p in w["geometry"]]},
+              "properties": {"nombre": w["tags"]["name"], "tipo": w["tags"].get("highway", ""),
+                             "ancho": w["tags"].get("width", "")}}
+             for w in ways if w.get("geometry") and len(w["geometry"]) > 1]
+    (out / "calles.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}, ensure_ascii=False),
+                                        encoding="utf-8")
+    return len(feats)
+
+
+def main(slug: str, only_normativa: bool = False, only_streets: bool = False) -> None:
     conf = PARTIDOS[slug]
     out = ROOT / "municipios" / slug
     (out / "fuentes").mkdir(parents=True, exist_ok=True)
+    if only_streets:
+        print(f"{slug}: {streets(slug, out)} tramos de calle -> {out / 'calles.geojson'}")
+        return
     raw_path = out / "fuentes" / "urbasig_zonificacion.geojson"
     if only_normativa:
         raw = json.loads(raw_path.read_text(encoding="utf-8"))
@@ -212,6 +306,7 @@ def main(slug: str, only_normativa: bool = False) -> None:
     (out / "zonas.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}, ensure_ascii=False),
                                        encoding="utf-8")
     rows = [zone_row(n, ps, conf) for n, ps in sorted(by_name.items())]
+    rows += [extra_row(spec) for spec in conf.get("filas_extra", [])]
     with open(out / "normativa_zonas.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=COLUMNS)
         w.writeheader()
@@ -236,18 +331,10 @@ out geom;""")
         locs = [{"type": "Feature", "geometry": mapping(partido), "properties": {"barrio": slug.replace('_', ' ').title()}}]
     (out / "localidades.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": locs}, ensure_ascii=False),
                                              encoding="utf-8")
-    ways = overpass(f"""[out:json][timeout:240];
-rel({conf['osm']});map_to_area->.p;
-way(area.p)["highway"]["name"];
-out geom;""")
-    streets = [{"type": "Feature",
-                "geometry": {"type": "LineString", "coordinates": [[p["lon"], p["lat"]] for p in w["geometry"]]},
-                "properties": {"nombre": w["tags"]["name"]}} for w in ways if w.get("geometry") and len(w["geometry"]) > 1]
-    (out / "calles.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": streets}, ensure_ascii=False),
-                                        encoding="utf-8")
+    n_streets = streets(slug, out)
     print(f"{slug}: {len(feats)} polígonos, {len(rows)} zonas, {len(locs)} localidades "
-          f"({', '.join(sorted(l['properties']['barrio'] for l in locs))}), {len(streets)} tramos de calle -> {out}")
+          f"({', '.join(sorted(l['properties']['barrio'] for l in locs))}), {n_streets} tramos de calle -> {out}")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], "--solo-normativa" in sys.argv[2:])
+    main(sys.argv[1], "--solo-normativa" in sys.argv[2:], "--solo-calles" in sys.argv[2:])

@@ -19,6 +19,21 @@ productos:
     R4: 1000                       # multifamiliar en terrenos de 1.000 m² o más
     R1u: 600                       # multifamiliar en terrenos de 600 m² o más, 1 vivienda cada 300 m² (Ord. 3749/20)
   m2_por_habitante: 30             # Gonzalo, 19/11/2026: la densidad limita los m² (2 personas por dormitorio, art. 13)
+  # Gonzalo, 24/11/2026 (GUIA_NORMATIVA.md 10.7):
+  m2_min_agrupadas_acceso_comun: 400   # #4: Código art. 71, 1 vivienda cada 400 m² con agua y cloaca (600 / 800 sin ellas)
+  senales_loteo:                   # #5: loteo con calle interna: cesiones Ley 8912 y Ley 14.449, relleno a cota +3,75
+    cerrado_sup_min: 5000          # Ley 14.449 art. 51: urbanización cerrada de más de 5.000 m² cede el 10%
+  sirga:                           # #6: camino de sirga, 15 m desde la ribera (Ord. 4448 y art. 1974 CCyC)
+    ancho_m: 15
+    distancia_max_m: 50            # punto a menos de 50 m de un río, canal o arroyo de OSM: se supone frentista
+    descuento_max: 0.5             # nunca más de la mitad de la superficie (pin corrido)
+  art_12k:                         # #7: Ord. 4448 art. 12 k, por el tipo de calle de OSM (el ancho casi nunca está)
+    radio_calle_m: 25              # calles a menos de 25 m del punto; la más ancha manda (nunca perder oportunidades)
+    clases_avenida: [trunk, primary, secondary, motorway, trunk_link, primary_link, secondary_link]
+    clases_media: [tertiary, tertiary_link]
+    pb_calle_media: 8              # calle de 12 a 20 m
+    pb_calle_angosta: 6            # calle de menos de 12 m (residential, living_street, unclassified, service)
+    pb_escalonamiento_min: 8       # en sectores de PB+8 o más, a más de 50 m de la avenida se marca el escalonamiento
   premio_ley_8912:                 # Gonzalo, 14/11/2026: usar los premios del Art. 47 cuando sea factible aplicarlos
     parcelas_min: 2                # lote de al menos 2 parcelas mínimas (y 2 frentes mínimos si se conoce el frente)
   comparables:
@@ -42,6 +57,16 @@ productos:
       ver_observacion_zona: "la zona tiene observaciones en UrbaSIG: ver normativa_zonas.csv"
       dos_frentes: "esquina o doble frente: más frente a la calle que el informado"
       proyecto_aprobado_previo: "Ord. 4448/26 art. 17.1: un expediente anterior al 05/11/2025 o una factibilidad otorgada conservan la norma anterior (más altura): verificar"
+      solo_en_sector_4448: "R1a / R3b evaluado con la planilla R1 / R3 por estar en un sector con altura de la Ord. 4448 (arts. 4 y 5): verificar que no sea parte de un barrio cerrado"
+      verificar_reglamento_nordelta: "zona de Nordelta (Plan Director Ord. 1297/92): verificar el reglamento del barrio y el plan de Nordelta"
+      verificar_plan_centro_civico: "Centro Cívico de Nordelta (UM2, Ord. 4448 art. 11, PB+12): indicadores de UR 1 C hasta leer las Ord. 3982/22, 4077/23 y 4126/23"
+      agrupadas_art_71: "agrupadas con acceso común: 1 vivienda cada 400 m² con agua y cloaca, 600 con uno, 800 sin ellos (Código art. 71); calle interna de 7,50 m"
+      cesion_ley_8912: "loteo: cesión de hasta 10% de verde y 4% de equipamiento (Ley 8912 art. 56), calles de 15 m y manzanas de 7.500 m² (Código arts. 21 y 23)"
+      cesion_ley_14449: "urbanización cerrada de más de 5.000 m²: cede el 10% de la superficie o su equivalente (Ley 14.449 art. 51)"
+      relleno_cota_375: "para subdividir hay que rellenar a cota +3,75 IGM antes de aprobar, con estudio hidráulico (Código arts. 19 y 27)"
+      camino_de_sirga: "franja de 15 m desde la ribera, de uso público y sin construcciones (Ord. 4448, art. 1974 CCyC): descontada de la superficie útil"
+      art_12k_ancho_de_calle: "Ord. 4448 art. 12 k: calle de menos de 12 m PB+6, de 12 a 20 m PB+8 (tipo de calle de OSM: verificar el ancho)"
+      art_12k_lejos_de_avenida: "Ord. 4448 art. 12 k: a más de 50 m de la avenida la altura baja a la intermedia o la mínima del sector"
     patrones_texto:                # Gonzalo, 19/11/2026: señal a partir del texto del aviso
       proyecto_aprobado_previo: "proyecto aprobado|planos? (municipales )?aprobados?|(pre)?factibilidad|permiso de obra|proyecto con aprobaci|aprobaci[oó]n municipal"
 
@@ -49,6 +74,7 @@ zonificacion:
   zonas_geojson: municipios/tigre/zonas.geojson
   barrios_geojson: municipios/tigre/localidades.geojson
   calles_geojson: municipios/tigre/calles.geojson
+  rios_geojson: municipios/tigre/fuentes/rios_y_vias_osm.geojson   # camino de sirga (ríos, canales y arroyos de OSM)
   fot_max: 3.75                    # C2a, C2b, TC con premios (FOT residencial 2,5 de las planillas)
   superficie_min_prefiltro: 346.7  # = 1300 / 3.75
   # Ord. 4448/26 (alturas por sector): municipios/tigre/alturas_4448.yaml, polígonos de tools/alturas_4448.py

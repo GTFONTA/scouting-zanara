@@ -82,5 +82,6 @@ def flags(r: dict, normativa: dict, cfg: dict) -> list[str]:
         out.append("requiere_cloaca_para_max")
     if "premio_ley_8912_aplicado" in (r.get("alertas") or []):
         out.append("premio_ley_8912_aplicado")
+    out += r.get("flags_extra") or []            # set by the evaluation (Tigre: sirga, art. 12 k, art. 71, loteo)
     arts = {**ARTICLES, **(f.get("articulos") or {})}          # each municipio cites its own code
     return [f"{x} ({arts[x]})" if arts.get(x) else x for x in dict.fromkeys(out)]

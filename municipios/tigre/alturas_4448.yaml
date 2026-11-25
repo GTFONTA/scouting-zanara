@@ -79,12 +79,19 @@
 - {art: 4, localidad: Benavidez, zona: RM1, pb: 4, tipo: manual, nota: "dos áreas sobre la RP 27, límites por parcelas"}
 - {art: 4, localidad: Benavidez, zona: RM1, pb: 6, tipo: frentista, calle: Dean Funes, desde: Avenida Benavidez}
 - {art: 4, localidad: Benavidez, zona: R3b, pb: 5, tipo: area, limites: [Alvear, Marabotto, San Martin, Brasil]}
+# Gonzalo, 24/11/2026 (GUIA_NORMATIVA.md 10.7 #1): R1a y R3b se evalúan con las planillas R1 / R3 solo dentro de estos
+# polígonos (fila "solo_en_sector_4448" de normativa_zonas.csv); fuera de ellos siguen como barrio cerrado
+- {art: 4, localidad: Benavidez, zona: R1a, pb: 5, tipo: frentista, calle: Colectora Panamericana, desde: Los Andes, hasta: Chilavert, nota: "Colectora Este frente al Acceso Chilavert, de Los Andes a la Panamericana"}
+- {art: 4, localidad: Benavidez, zona: R1a, pb: 5, tipo: manual, nota: "Perón, Patricias Argentinas (no está en OSM), Marabotto, Alvear, Brasil, San Martín y límites por parcelas"}
+- {art: 4, localidad: Benavidez, zona: R1a, pb: 2, tipo: manual, sin_multifamiliar: true, condiciones: "La Bota: sin torres ni densificación; estudio hidráulico; 50% absorbente", nota: "La Bota"}
 
 # ---------------------------------------------------------------- art. 5, Dique Luján: todo PB+3 (alcanza la máxima de la zona)
 - {art: 5, localidad: Dique Lujan, zona: C1, pb: 3, tipo: manual, nota: "Canal Villanueva, Beruti, Roca, Luis María Campos"}
 - {art: 5, localidad: Dique Lujan, zona: C3, pb: 3, tipo: manual, nota: "frentistas a 12 de Octubre y 9 de Julio"}
 - {art: 5, localidad: Dique Lujan, zona: RM1, pb: 3, tipo: manual}
 - {art: 5, localidad: Dique Lujan, zona: R2g, pb: 3, tipo: manual}
+- {art: 5, localidad: Dique Lujan, zona: R1a, pb: 3, tipo: manual, nota: "Canal Villanueva, Río Luján, Av. América (no está en OSM en la localidad), 12 de Octubre; sin frentistas a Villanueva, 12 de Octubre ni 9 de Julio"}
+- {art: 5, localidad: Dique Lujan, zona: R1a, pb: 3, tipo: manual, nota: "Canal Villanueva, Yapeyú, Reconquista, América, 12 de Octubre"}
 
 # ---------------------------------------------------------------- art. 6, Ricardo Rojas
 - {art: 6, localidad: Ricardo Rojas, zona: C1, pb: 4, tipo: manual, nota: "Henry Ford, Albarellos, Ricardo Gutiérrez y Colectora Este (Albarellos no está en la localidad en OSM)"}
@@ -124,3 +131,4 @@
 
 # ---------------------------------------------------------------- art. 11, Nordelta
 - {art: 11, localidad: Nordelta, zona: C5, pb: 6, tipo: manual, nota: "frentistas a la RP 27 hasta Pasaje de las Ciencias", condiciones: "estudio de impacto vial y ambiental; cocheras"}
+- {art: 11, localidad: Nordelta, zona: UE 8, pb: 12, tipo: manual, nota: "UM2: planos particularizados Centro Cívico 1 y 2 (Ord. 3982/22, 4077/23, 4126/23)"}

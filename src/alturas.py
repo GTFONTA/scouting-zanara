@@ -10,6 +10,7 @@ without one the listing gets a warning to check it by hand.
 """
 
 import json
+import re
 from functools import lru_cache
 
 import pyproj
@@ -30,7 +31,9 @@ class Alturas:
         self.polygons = [(transform(_TO_M, shape(f["geometry"])), f["properties"]) for f in fc["features"]]
 
     def cap(self, zona: str, localidad: str, lat: float | None, lon: float | None) -> dict | None:
-        """{'pb', 'fuente', 'sin_multifamiliar', 'condiciones', 'aviso'} for a zone at a point, or None."""
+        """{'pb', 'fuente', 'sin_multifamiliar', 'condiciones', 'aviso', 'en_poligono', 'fas'} for a zone at a
+        point, or None. fas: the absorbent share the sector demands ("40% absorbente", art. 12 g), only inside a
+        polygon (an unidentified sector never loses a hit)."""
         z, loc = (zona or "").lower(), _plain(localidad or "")
         listed = [s for s in self.sectors if s["zona"].lower() == z and _plain(s["localidad"]) == loc]
         if not listed:
@@ -41,14 +44,16 @@ class Alturas:
                       if props["zona"].lower() == z and _plain(props["localidad"]) == loc and g.contains(p)]
             if inside:
                 best = max(inside, key=lambda q: q["pb"])
+                conditions = "; ".join(dict.fromkeys(q["condiciones"] for q in inside if q["condiciones"]))
+                shares = [int(x) for x in re.findall(r"(\d+)\s*% absorbente", best["condiciones"] or "")]
                 return {"pb": best["pb"], "fuente": f"sector {best['id']}",
                         "sin_multifamiliar": any(q["sin_multifamiliar"] for q in inside),
-                        "condiciones": "; ".join(dict.fromkeys(q["condiciones"] for q in inside if q["condiciones"])),
-                        "aviso": ""}
+                        "condiciones": conditions, "aviso": "", "en_poligono": True,
+                        "fas": max(shares) / 100 if shares else None}
         top = max(s["pb"] for s in listed)
         forbids = any(s.get("sin_multifamiliar") for s in listed)
         return {"pb": top, "fuente": "máxima de la zona en la localidad", "sin_multifamiliar": False,
-                "condiciones": "",
+                "condiciones": "", "en_poligono": False, "fas": None,
                 "aviso": "altura_4448_sector_no_identificado (se usó la máxima de la zona en la localidad)"
                          + ("; verificar si el sector prohíbe multifamiliar (Ord. 4448)" if forbids else "")}
 

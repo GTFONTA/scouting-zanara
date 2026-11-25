@@ -15,7 +15,7 @@ productos.activo in config.yaml switches between:
 
 import math
 
-from . import alturas
+from . import alturas, entorno
 from .comparables import PARTIDO
 
 NO_HOUSING = "Sin vivienda como producto"
@@ -123,8 +123,9 @@ def units(zone: dict, s: float, front: float | None, p: dict) -> dict:
         if unit_area and unit_width:
             out["agrupadas_calle"] = _floor(s / unit_area) if front is None else \
                 min(_floor(s / unit_area), _floor(front / unit_width))
-        if unit_area:
-            out["agrupadas_acceso_comun"] = _floor(s / unit_area)
+        if unit_area:            # Tigre, Código art. 71: a condominium of houses needs 400 m2 per house with water and
+            common = max(unit_area, p.get("m2_min_agrupadas_acceso_comun") or 0)     # sewers (Gonzalo, 24/11/2026)
+            out["agrupadas_acceso_comun"] = _floor(s / common)
         if multifamiliar(zone, s, p) == "Sí":
             potential, net = _f(zone["densidad_neta_potencial"]), _f(zone["densidad_neta"])
             if "N = sup/" in zone["regla_unidades"] and unit_area:          # Rm4: N = sup/150 even multifamiliar
@@ -169,24 +170,72 @@ def _fot_multi(zone: dict, s: float = 0, front: float | None = None, p: dict | N
     return _f(zone["fot_max" if use_max else "fot"]) or _f(zone["fot"])
 
 
-def _caps(zone: dict, fot: float, r: dict, cfg: dict) -> tuple[float, list[str], bool]:
+def fos_by_setbacks(zone: dict, s: float, front: float | None) -> float | None:
+    """FOS the setbacks of the zone sheet leave on this lot (Tigre, Gonzalo 24/11/2026), or None if unknown (no front,
+    or the zone has no setbacks in normativa_zonas.csv). Rear: (depth - base) / 2, at least 3 m and at most 15 m in
+    residential zones / 20 m elsewhere (Código, art. 46), down to retiro_fondo_min where the sheet lets the building
+    take the rear setback to complete the FOS. Side: retiro_bilateral on each side, or max(min, % of the width) on one
+    side for lots wider than 11 m."""
+    base, ahead = _f(zone.get("retiro_fondo_base")), _f(zone.get("retiro_frente"))
+    if not front or not s or base is None or ahead is None:
+        return None
+    depth = s / front
+    rear = min(max(3.0, (depth - base) / 2), 15.0 if zone["zona"].startswith("R") else 20.0)
+    if _f(zone.get("retiro_fondo_min")) is not None:
+        rear = min(rear, _f(zone["retiro_fondo_min"]))
+    both, share, least = _f(zone.get("retiro_bilateral")), _f(zone.get("retiro_lateral_pct")), _f(zone.get("retiro_lateral_min"))
+    side = 2 * both if both else max(least or 0, share / 100 * front) if share and front > 11 else 0.0
+    return max(0.0, front - side) * max(0.0, depth - ahead - rear) / s
+
+
+def _caps(zone: dict, fot: float, r: dict, cfg: dict, s: float | None = None,
+          front: float | None = None) -> tuple[float, list[str], bool]:
     """(FOT that can really be built, why it is lower than the zone's, multifamiliar forbidden by the sector).
-      height   zonificacion.alturas_yaml (Tigre, Ord. 4448/26): FOS x (N + 1) levels of "PB + N"
+      height   zonificacion.alturas_yaml (Tigre, Ord. 4448/26): FOS x (N + 1) levels of "PB + N", where the FOS is the
+               effective one (Gonzalo, 24/11/2026): at most 1 - the absorbent share the sector demands (art. 12 g)
+               and what the zone's setbacks leave; and N at most what the width of the street allows (art. 12 k:
+               productos.art_12k)
       density  productos.m2_por_habitante (Tigre, Gonzalo 19/11/2026: 30): inhabitants of the zone's density
                (with sewers if it has a potential one) x m2 per inhabitant
     Without those keys (San Isidro) the FOT doesn't change."""
     limits, forbidden = [], False
+    lat, lon = r.get("lat_usada") or r.get("lat"), r.get("lon_usada") or r.get("lon")
     heights = alturas.for_config(cfg)
-    cap = heights.cap(zone["zona"], r.get("localidad"), r.get("lat_usada") or r.get("lat"),
-                      r.get("lon_usada") or r.get("lon")) if heights else None
+    cap = heights.cap(zone["zona"], r.get("localidad"), lat, lon) if heights else None
+    alerts, extra = r.setdefault("alertas", []), r.setdefault("flags_extra", [])
     if cap:
         forbidden = cap["sin_multifamiliar"]
         fos = _f(zone["fos"])
-        by_height = fos * (cap["pb"] + 1) if fos else None
+        fos_eff, why = fos, []
+        if fos and cap.get("fas") and 1 - cap["fas"] < fos_eff:
+            fos_eff = 1 - cap["fas"]
+            why.append(f"{cap['fas']:.0%} absorbente")
+        by_setbacks = fos_by_setbacks(zone, s, front)
+        if fos and by_setbacks is not None and by_setbacks < fos_eff:
+            fos_eff = by_setbacks
+            why.append("retiros de la zona")
+        if fos_eff is not None:
+            r["fos_efectivo"] = round(fos_eff, 2)
+        pb, k12 = cap["pb"], cfg["productos"].get("art_12k")
+        env = entorno.for_config(cfg) if k12 else None
+        if env:
+            street_pb, kind = env.street_cap(lat, lon)
+            if street_pb is not None and street_pb < pb:
+                pb = street_pb
+                extra.append("art_12k_ancho_de_calle")
+                alerts.append(f"art_12k_ancho_de_calle ({kind}: PB+{street_pb} en vez de PB+{cap['pb']})")
+            if cap["pb"] >= k12["pb_escalonamiento_min"]:
+                d = env.avenue_m(lat, lon)
+                if d is None or d > 50:
+                    extra.append("art_12k_lejos_de_avenida")
+                    alerts.append("art_12k_lejos_de_avenida (" + (f"{d:.0f} m" if d is not None else "más de 200 m")
+                                  + " de la avenida: entre 50 y 100 m rige una altura intermedia y a más de 100 m la "
+                                    "mínima del sector)")
+        by_height = fos_eff * (pb + 1) if fos_eff else None
         if by_height and by_height < fot:
             fot = by_height
-            limits.append(f"altura Ord. 4448 PB+{cap['pb']} ({cap['fuente']}): FOS {fos:g} x {cap['pb'] + 1} niveles")
-        alerts = r.setdefault("alertas", [])
+            used = f"FOS {fos_eff:.2f} ({', '.join(why)})" if why else f"FOS {fos:g}"
+            limits.append(f"altura Ord. 4448 PB+{pb} ({cap['fuente']}): {used} x {pb + 1} niveles")
         if cap["aviso"]:
             alerts.append(cap["aviso"])
         if cap["condiciones"]:
@@ -232,9 +281,31 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
         out["motivo_descarte"] = "superficie_menor_prefiltro"
         return out
     rows = [row for z in (r.get("zonas_candidatas") or "").split(",") if z for row in normativa.get(z, [])]
+    lat, lon = r.get("lat_usada") or r.get("lat"), r.get("lon_usada") or r.get("lon")
+    heights = alturas.for_config(cfg)
+
+    def in_sector(x: dict) -> bool:
+        """Rows valid only inside a sector of the Ord. 4448 with height (Tigre R1a / R3b, Gonzalo 24/11/2026)."""
+        if "solo_en_sector_4448" not in x["flags"]:
+            return True
+        cap = heights.cap(x["zona"], r.get("localidad"), lat, lon) if heights else None
+        return bool(cap and cap["en_poligono"] and not cap["sin_multifamiliar"] and cap["pb"] >= 3)
+    rows = [x for x in rows if in_sector(x)]
     if not rows:
         out["motivo_descarte"] = "zona_sin_normativa"
         return out
+    extra = r.setdefault("flags_extra", [])
+    total = s
+    sirga, env = p.get("sirga"), entorno.for_config(cfg)
+    water = env.water_m(lat, lon) if sirga and env else None
+    if water:        # camino de sirga (Gonzalo, 24/11/2026): the 15 m strip along the bank is not usable
+        strip = min(sirga["ancho_m"] * (front or math.sqrt(s)), sirga["descuento_max"] * s)
+        s = total - strip
+        out["superficie_util_m2"] = round(s)
+        extra.append("camino_de_sirga")
+        r.setdefault("alertas", []).append(
+            f"camino_de_sirga ({water[1]} a {water[0]:.0f} m del punto: se descuentan {strip:.0f} m2 de la franja de "
+            f"{sirga['ancho_m']:g} m desde la ribera; verificar si el lote es frentista)")
     housing = [x for x in rows if x["regla_unidades"] != NO_HOUSING]
     evals = [(x, units(x, s, front, p)) for x in rows]
     hits, near = [], []
@@ -252,7 +323,8 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
     fot = out.get("fot_usado") or r.get("fot_usado")
     forbidden = False
     if zm and fot:                   # height (Tigre: Ord. 4448/26) and density can leave part of the FOT unused
-        fot, limits, forbidden = _caps(zm, fot, r, cfg)
+        fot, limits, forbidden = _caps(zm, fot, r, cfg, s, front)
+        out["fos_efectivo"] = r.pop("fos_efectivo", None)
         out["fot_efectivo"], out["limite_fot"] = round(fot, 2), "; ".join(limits)
     if fot:
         out["m2_construibles"], out["incidencia_usd_m2"] = round(s * fot), round(price / (s * fot), 1)
@@ -322,7 +394,13 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
         else:
             why_lot = "pocas_unidades" if _lots_approval(ul) < p["unidades_min"] else "usd_por_unidad_alto"
 
-    out["gran_predio"] = bool(housing) and s >= p["sup_min_gran_predio"]
+    if out.get("agrupadas_acceso_comun") and p.get("m2_min_agrupadas_acceso_comun"):
+        extra.append("agrupadas_art_71")
+    if p.get("senales_loteo") and out.get("lotes_calle_interna"):     # Tigre, Gonzalo 24/11/2026 (10.7 #5)
+        extra += ["cesion_ley_8912", "relleno_cota_375"]
+        if total > p["senales_loteo"]["cerrado_sup_min"]:
+            extra.append("cesion_ley_14449")
+    out["gran_predio"] = bool(housing) and total >= p["sup_min_gran_predio"]
     if hits:
         out["resultado"], out["via"] = "oportunidad", " + ".join(hits)
     elif near:

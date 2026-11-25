@@ -1,8 +1,8 @@
 # Tigre — guía de normativa para evaluar un lote
 
-Lectura rápida: qué limita lo que se construye en un lote de Tigre, cómo se calcula según la zona y el lote, y qué buscar que el resto no ve. Estudio del 19/11/2026.
+Lectura rápida: qué limita lo que se construye en un lote de Tigre, cómo se calcula según la zona y el lote, y qué buscar que el resto no ve. Estudio del 19/11/2026; revisión exhaustiva del 24/11/2026 en la sección 10 (agrupadas, subdivisión, cesiones, agua, plusvalías, Nordelta y decisiones pendientes).
 
-**Estado:** desde el 19/11/2026 el motor de Tigre aplica las decisiones de Gonzalo de la sección 8: planillas por encima de UrbaSIG, alturas de la Ord. 4448 por sector, tope por densidad y señal de proyecto aprobado. La sección 7 cuenta qué cambió y qué quedó afuera.
+**Estado:** desde el 19/11/2026 el motor de Tigre aplica las decisiones de Gonzalo de la sección 8: planillas por encima de UrbaSIG, alturas de la Ord. 4448 por sector, tope por densidad y señal de proyecto aprobado. La sección 7 cuenta qué cambió y qué quedó afuera. El 24/11/2026 se sumaron las 7 decisiones de la sección 10.7; la sección 10.9 dice qué hace el motor con ellas.
 
 **Fuentes** (PDFs en Drive, `01 - PROYECTOS CLAUDE/scouting-tigre/normativa/`):
 - **Código de Zonificación**, Ordenanza 1894/96, texto ordenado con las Ord. 1996/97 y 3344/13.
@@ -209,3 +209,165 @@ Un aviso que no cae en ningún polígono usa **la altura máxima de su zona en e
 - **Barrios cerrados y clubes de campo:** la altura va al Concejo con un informe vinculante (art. 14).
 - **Interpretación restrictiva y sin excepciones** (art. 16 bis): no conviene contar con excepciones particulares.
 - **Delta:** excluido; tiene normas propias.
+
+---
+
+## 10. Revisión exhaustiva (24/11/2026): lo que faltaba
+
+Segunda pasada, ahora sobre todo el marco que pesa en un lote de Tigre:
+- el Código 1894/96 completo: subdivisión, art. 71, cotas y Anexo del Delta;
+- la Ord. 4448/26: definiciones y art. 12;
+- el Decreto-Ley 8912/77, texto ordenado de normas.gba.gob.ar;
+- la Ley 14.449 de Acceso Justo al Hábitat.
+
+Las fuentes nuevas están al final.
+
+### 10.1 Estado de la Ord. 4448/26
+
+- **Sanción:** el Concejo la aprobó a fines de abril de 2026, 18 votos a 6. Se publicó en el Boletín Oficial 1065 del 07/05/2026. Sobre la promulgación hay una discrepancia: la prensa menciona el Decreto 606/26, y nuestra copia dice 584. Hay que verificarlo en el Digesto, que hoy no responde.
+- **Cautelar previa:** en noviembre de 2025, vecinos obtuvieron una cautelar que frenaba las nuevas habilitaciones hasta que hubiera una norma nueva. No encontré ninguna cautelar contra la 4448 ni contra su art. 17, aunque la oposición anunció que podría pedirla. **Riesgo:** un aviso que dependa de la transición del art. 17 puede quedar trabado en la Justicia.
+- **La transición del art. 17 ya se usa:**
+  - **El caso:** en 2026 el Concejo dio viabilidad urbanística a un complejo de 59,90 m en RM1 de Rincón de Milberg, frente a Nordelta (Sausalito y Los Lirios, 5.289 m²). Son dos bloques de 17 niveles.
+  - **Por qué entra:** el expediente es de octubre de 2025 e inició bajo la Ord. 3749/20. Hoy la 4448 da PB+6 en esa zona.
+  - **Qué confirma:** la señal `proyecto_aprobado_previo` vale plata.
+- **Fecha de corte:** expedientes anteriores al 05/11/2025 (algunos medios dicen 04/11).
+
+### 10.2 Lo que el motor todavía no aplica y cambia los m²
+
+1. **Superficie absorbente (FAS) de la 4448.** Varios sectores exigen un mínimo de suelo absorbente y un estudio hidráulico:
+   - **50%:** "La Bota" y las márgenes del Canal Aliviador; este último pide además un retiro libre desde la ribera;
+   - **40%:** R1u en Tigre centro y sectores de Troncos del Talar, El Talar y Don Torcuato;
+   - **30%:** C2a de Pacheco.
+
+   Con 50% absorbente, el FOS real queda en 0,5 o menos (0,4 con los accesos). Como la altura está topada, el FOT alcanzable baja: FOT ≤ FOS real × niveles.
+2. **FOS efectivo por retiros** (sección 5, paso 5): sigue pendiente.
+3. **Escalonamiento del art. 12 k:**
+   - **por ancho de calle:** menos de 12 m, PB+6; de 12 a 20 m, PB+8;
+   - **por distancia a la avenida:** hasta 50 m, la máxima del sector; de 50 a 100 m, una intermedia; más de 100 m, la mínima.
+
+   Pesa en los sectores de PB+8 a PB+12: Tc, Tr y C4a sobre la RP27.
+4. **Cocheras (art. 12 e).** Es 1 por unidad, dentro del lote. En las zonas con estudio hidráulico, el subsuelo solo vale si el estudio lo aprueba. Con 22,5 m² por cochera con circulación (Código, art. 65), un edificio de 50 unidades necesita unos 1.100 m² de cocheras, que van en PB o en pisos altos (estos no computan FOT ni altura).
+
+   No cambia los m² vendibles, pero sí el costo y si el proyecto entra en la parcela. **Sugerencia:** marcar los lotes de menos de 800 m² con más de 20 unidades.
+
+### 10.3 Viviendas agrupadas y loteo: reglas que no estaban
+
+- **Art. 71 del Código (emprendimientos urbanísticos privados, condominio de casas, Ley 13.512).** Donde se admite vivienda, se permite más de una unidad por lote según los servicios:
+  - **1 vivienda cada 400 m²** con agua y cloaca por red (400 hab/ha);
+  - **1 cada 600 m²** con uno de los dos servicios (150 hab/ha);
+  - **1 cada 800 m²** con tratamiento estático (90 hab/ha).
+
+  Además fija FOS 0,6, FOT 1,2, retiro de 5 m entre viviendas, 9 m de altura, calle interna de 7,50 m (calzada de 5,50) y la cota inundable del art. 19.
+
+  **El motor usa los m² por unidad de UrbaSIG:** en R2d, R2f, R2g y R3d da 200 m², la mitad de lo que permite el art. 71. **Propuesta:** en "agrupadas con acceso común", tomar el mayor entre el valor de la zona y 400 m² (600 u 800 sin servicios), con la señal de servicios.
+- **Subdivisión (Código, arts. 14 a 27):**
+  - **Cota +3,75 IGM (arts. 19 y 27).** Para subdividir hay que **rellenar a +3,75 IGM antes de la aprobación**, con un estudio de la cuenca visado por Hidráulica. Bajo esa cota y sin infraestructura rige la Ley 6.254. **Es un costo grande en Benavídez, Rincón, Dique Luján y la ribera, y el motor no lo ve.**
+  - **Calles y manzanas.** Las calles nuevas miden 15 m entre líneas municipales (art. 21). Las manzanas, de 60 a 150 m de lado y mínimo 7.500 m² (art. 23). Por eso un loteo con calle interna pierde más que en San Isidro: con lotes de 15 × 30 a los dos lados de una calle de 15 m, la calle ocupa ~20%. El 25% que usa el motor queda razonable.
+  - **Infraestructura (art. 17).** Una fracción de más de 2.000 m² que se divide en más de 3 lotes tiene que hacer la infraestructura del art. 15: agua, pavimento, pluviales, electricidad, alumbrado y cloaca.
+  - **Ley 8912:**
+    - **art. 56:** al ampliar áreas urbanas, se ceden 3,5 a 6 m² de verde y 1 a 2 m² de equipamiento por habitante. En una reestructuración dentro del área urbana, **hasta 10% de verde y 4% de equipamiento**;
+    - **art. 57:** al parcelar manzanas anteriores a la ley, la cesión se compensa con más FOT y densidad;
+    - **art. 59:** al crear o ampliar núcleos, franja de 50 m desde la máxima creciente junto a cursos de agua, o de 100 m junto a espejos de agua.
+
+    **En un loteo grande se pierde el ~20–25% de calles más hasta 14% de cesiones.** El motor descuenta solo el 25% de calle.
+- **Ley 14.449, art. 51.** Los barrios cerrados, clubes de campo y toda urbanización cerrada en predios de **más de 5.000 m²** ceden el **10% de la superficie** como pago a cuenta, en cualquier zona. Se puede pagar en dinero o en suelo equivalente. **Afecta el producto "loteo con calle interna" cuando es cerrado.**
+
+### 10.4 Agua: sirga, cota y riesgo
+
+- **Camino de sirga.** Es una franja de 15 m desde la línea de ribera, de uso público, sin construcciones ni cercos. La define la 4448 y coincide con el art. 1974 del Código Civil y Comercial.
+
+  **En Tigre hay muchos lotes frentistas a ríos, canales y lagos.** La capa de ríos de OSM ya está en el repo (`municipios/tigre/fuentes/rios_y_vias_osm.geojson`). Con ella se puede marcar cada aviso a menos de ~50 m de un curso de agua y descontar la franja de 15 m de la superficie útil.
+- **Cotas:**
+  - +3,75 IGM para subdividir (Código);
+  - +4,00 IGM como base para medir la altura (Decreto 165/08).
+
+  La franja inundable va desde la curva de 5 m IGN hasta el río Luján. Sin un modelo de elevación no se puede automatizar: queda como verificación manual en la línea de checklist.
+- **Estudio hidráulico obligatorio** en los sectores de la 4448 que lo piden: define la cota de la PB y si se puede hacer subsuelo.
+
+### 10.5 Plusvalías y fondos
+
+- **Ley 14.449, arts. 46 a 50:**
+  - **Cuándo participa el municipio:** rezonificación, mayor aprovechamiento (FOS, FOT o densidad, por excepción o por convenio), grandes desarrollos u obra pública. En esos casos se queda con **al menos el 10% de la valorización**.
+  - **Cuándo se cobra:** al pedir el permiso, al cambiar el uso o al transferir.
+  - **Cuándo no aplica:** construir dentro del Código vigente.
+
+  Pesa en las jugadas de cambio de norma:
+  - galpón a residencial (4448, art. 13);
+  - urbanización especial de 7.500 m² o más (Código, art. 50);
+  - transferencia de FOT.
+- **Fondo Municipal para la Mejora del Hábitat.** Las planillas de C7 y RM2 piden al menos el 10% de la valorización cuando sube la capacidad constructiva. No encontré la ordenanza general de Tigre.
+- **Derechos de construcción 2026: pendiente.** No pude leer la Ordenanza Impositiva porque el Digesto municipal y el SIBOM no responden. Hace falta porque entra en el costo total de la rentabilidad.
+
+### 10.6 Oportunidades nuevas que el precio no incluye
+
+1. **Transferencia de capacidad constructiva desde el Delta** (Anexo del Delta, punto 2.2.1.2):
+   - **Cómo funciona:** quien engloba las parcelas baldías de un Distrito de Reconversión de las islas (DDr1 a DDr82) puede transferir **hasta +30% de FOT y densidad** a parcelas del continente. Un edificio catalogado transfiere hasta +10%.
+   - **Topes:** el FOT máximo de la Ley 8912 (2,5 residencial, 3 comercial) y el FOT ya topado por la altura de la 4448.
+   - **Trámite:** se instrumenta por convenio urbanístico, y el crédito se puede ceder.
+   - **Dónde sirve:** donde la altura no corta, como C5 o R7 con lotes chicos.
+2. **La transición del art. 17** (ver 10.1), ya probada en un caso real.
+3. **R1a y R3b fuera de los barrios cerrados.** El motor los ignora porque UrbaSIG los marca como "barrio cerrado"; son 548 ha de R1a en Benavídez y 820 ha de R3b. Pero la 4448 les da altura en sectores concretos:
+   - R1a PB+5 sobre la colectora de la Panamericana frente a Chilavert y en el área de Perón y Patricias Argentinas;
+   - R3b PB+5 entre Alvear, Marabotto, San Martín y Brasil;
+   - R1a PB+3 en Dique Luján.
+
+   **Es probable que haya lotes desarrollables que hoy se pierden.**
+4. **Nordelta:**
+   - **Base normativa:** el Decreto provincial 1736/92 y el Plan Director de la Ord. 1297/92, con sus prórrogas (2898/08).
+   - **Alturas de la 4448 (art. 11):** C5 PB+6, UE PB+3 y **UM2 PB+12**. UM2 rige en el Centro Cívico y en Castaños–Estación, con los planes particularizados de las Ord. 3982/22, 4077/23 y 4126/23.
+   - **Zonas UR de UrbaSIG:** UR 1 C con FOT 3, UR 1.1 con 2,4, UR 2.1 con 1,4, etc. La 4448 no las nombra.
+   - **Reglamentos privados:** dentro de los barrios de Nordelta suelen limitar a una vivienda.
+
+   **Hay riesgo de falsos positivos en UR 4.x** (FOT 0,5 a 0,65 con multifamiliar "Sí"). **La oportunidad real está en UR 1 C, UR 1.1 y UM2**, que son macrolotes del centro.
+
+### 10.7 Decisiones para Gonzalo
+
+| # | Tema | Propuesta |
+|---|---|---|
+| 1 | R1a y R3b en los sectores con altura de la 4448 | Evaluarlos con los indicadores de R1 y R3 de las planillas, solo dentro de esos sectores; el resto sigue sin producto |
+| 2 | Nordelta | UR 4.x sin multifamiliar (son barrios). UR 1 C, UR 1.1 y UM2 con multifamiliar y la señal "verificar plan particularizado / reglamento Nordelta" |
+| 3 | FAS y FOS efectivo | Aplicar el absorbente de la 4448 por sector (FOS ≤ 1 − FAS) y los retiros, como tope del FOT junto con la altura |
+| 4 | Agrupadas con acceso común | Tomar el mayor entre los m² de la zona y los del art. 71 (400, 600 u 800 según los servicios) |
+| 5 | Loteo con calle interna | Mantener el 25% de calle y agregar señales: cesión de la Ley 8912 (hasta 14%), cesión del 10% de la Ley 14.449 si es cerrado de más de 5.000 m², relleno a cota +3,75 |
+| 6 | Camino de sirga | Señal automática con la capa de ríos y descuento de la franja de 15 m de la superficie útil |
+| 7 | Art. 12 k (calle y avenida) | Aplicar el tope por ancho de calle cuando se conozca el ancho (OSM) y marcar la distancia a la avenida |
+
+### 10.9 Aplicado en el motor (Gonzalo aprobó las 7 propuestas, 24/11/2026)
+
+| # | Qué hace ahora el motor | Dónde |
+|---|---|---|
+| 1 | R1a y R3b tienen una segunda fila (planillas R1 y R3, multifamiliar con agua y cloaca) que solo vale dentro de un polígono de la 4448 con PB+3 o más que no prohíba multifamiliar. Fuera de esos polígonos siguen sin producto. Hoy hay polígono en R1a frente a la colectora de Panamericana, junto al Acceso Chilavert (203 m de frente), y en R3b entre Alvear, Marabotto, San Martín y Brasil (2,2 ha). Quedaron "manuales" porque OSM no tiene sus calles: R1a de Perón y Patricias Argentinas, "La Bota" (PB+2, sin multifamiliar) y los dos sectores R1a de Dique Luján; esos no habilitan nada. Señal `solo_en_sector_4448` | `tools/municipio_pba.py` (`filas_extra`), `alturas_4448.yaml`, `evaluate.py` |
+| 2 | UR 4.x sin multifamiliar (unifamiliar por parcela). Todas las UR llevan la señal `verificar_reglamento_nordelta`. UE 8 (Centro Cívico, UM2) tiene una fila con los indicadores de UR 1 C (FOT 3, 2.000 hab/ha), la señal `verificar_plan_centro_civico` y PB+12 como sector manual | ídem |
+| 3 | FOS efectivo = el menor entre el FOS de la zona, 1 − el absorbente del sector de la 4448 (solo dentro de su polígono) y lo que dejan los retiros de la planilla (frente, fondo, laterales). Para los retiros hace falta el frente: sin frente no se aplica. Con la altura: FOT ≤ FOS efectivo × niveles. Columnas `fos_efectivo` y `limite_fot` | `normativa_zonas.csv` (columnas `retiro_*`), `evaluate.fos_by_setbacks`, `_caps` |
+| 4 | Agrupadas con acceso común: el mayor entre los m² por unidad de la zona y 400 m². "Agrupadas a la calle" sigue con la planilla (R2d, R3d: 200 m²). Señal `agrupadas_art_71` | `productos.m2_min_agrupadas_acceso_comun` |
+| 5 | Todo aviso que admite loteo con calle interna lleva `cesion_ley_8912` y `relleno_cota_375`; con más de 5.000 m², también `cesion_ley_14449`. El 25% de calle no cambió | `productos.senales_loteo` |
+| 6 | Punto a menos de 50 m de un río, canal o arroyo de OSM: se descuenta la franja de 15 m × frente (sin frente, 15 × √superficie; nunca más de la mitad). Las unidades y los m² se calculan con esa superficie útil, pero el filtro de superficie y el gran predio usan la total. Columna `superficie_util_m2`, señal `camino_de_sirga` | `productos.sirga`, `src/entorno.py` |
+| 7 | Con el tipo de calle de OSM (`calles.geojson` ahora trae `tipo`): si la calle más ancha a menos de 25 m del punto es residencial, el tope es PB+6; si es terciaria, PB+8; si es avenida, sin tope. En sectores de PB+8 o más, a más de 50 m de una avenida, se marca `art_12k_lejos_de_avenida` (solo la señal: la altura intermedia y la mínima del sector no están en la ordenanza) | `productos.art_12k`, `src/entorno.py`, `_caps` |
+
+**Medición rápida** (puntos cada 40 m dentro de los sectores de PB+8 y PB+10): por el ancho de calle, el 23% queda en PB+6 y el 28% en PB+8. Más de la mitad de esos puntos está a más de 50 m de una avenida.
+
+**Lo que dio poco:** el absorbente de la 4448. Con 40% o menos, 1 − FAS queda en 0,6 o más y no corta (FOS de las zonas: 0,6). Solo corta con 50% ("La Bota", Canal Aliviador), y esos sectores no tienen polígono o son zonas sin vivienda.
+
+**San Isidro:** sin cambios. Lo comprobé con los golden del 02/11 y el 09/11: 0 celdas distintas; solo se agregan dos columnas vacías.
+
+**Pendiente:**
+- los polígonos de los sectores "manuales";
+- la altura intermedia y la mínima del escalonamiento;
+- las cocheras;
+- los derechos de construcción;
+- leer los planes del Centro Cívico de Nordelta.
+
+### 10.8 Fuentes nuevas
+
+- [Decreto-Ley 8912/77, texto ordenado (normas.gba.gob.ar)](https://normas.gba.gob.ar/documentos/5B3DztjV.html): arts. 37, 45–47, 52, 56–59, 62 y 64–69.
+- [Ley 14.449, texto actualizado (normas.gba.gob.ar)](https://normas.gba.gob.ar/documentos/B3mgaUj0.html): arts. 44–51.
+- [Decreto provincial 1736/92, núcleo urbano Nordelta](https://normas.gba.gob.ar/documentos/0zQy76f8.html).
+- Prensa sobre la 4448:
+  - [Zonales, 29/04/2026](https://zonales.com/polemica-tigre-aprobaron-ordenanza-torres/);
+  - [SM Noticias, 28/04/2026](https://www.smnoticias.com/noticias/276401);
+  - [La Troncal, complejo de 59,90 m](https://latroncal.com.ar/complejo-60-metros-frente-nordelta-ruta-27/).
+- [Trámite de derechos de construcción (tigre.gob.ar)](https://www.tigre.gob.ar/tramites/liquidaciones_derechos_construccion): no publica las alícuotas.
+- PDFs en Drive:
+  - Código 1894/96: arts. 13–27, 50, 59–61, 65 y 70–71, y Anexo del Delta 2.2.1.2;
+  - Ord. 4448/26: definiciones y arts. 2–12;
+  - Decreto 165/08.
