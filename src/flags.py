@@ -4,9 +4,18 @@ Each flag carries its article (Excel, tab 'Incentivos y trampas'). They inform t
 they never change the units, because they are discretionary or need to be verified by hand.
 """
 
+import json
 import re
+from functools import lru_cache
 
+import pyproj
+from shapely.geometry import Point, shape
+from shapely.ops import transform, unary_union
+
+from .config import path
 from .locate import _plain
+
+_TO_M = pyproj.Transformer.from_crs(4326, 5347, always_xy=True).transform
 
 ARTICLES = {
     "galpon_no_conforme": "hasta +30% de FOT y unidades, Art. 1.2.4.3 C",
@@ -41,6 +50,28 @@ def _two_zones(r: dict, normativa: dict, max_m: float) -> bool:
     near = [z for z in (r.get("zonas_cercanas") or "").split(",") if z]
     return r["distancia_borde_m"] <= max_m and any(_rules(z, normativa) != _rules(r.get("zona"), normativa)
                                                     for z in near)
+
+
+@lru_cache(maxsize=8)
+def _zone_shape(file: str, zona: str):
+    fc = json.loads(path(file).read_text(encoding="utf-8"))
+    parts = [transform(_TO_M, shape(f["geometry"])) for f in fc["features"] if f["properties"]["zona"] == zona]
+    return unary_union(parts) if parts else None
+
+
+def near_zone(r: dict, cfg: dict) -> list[str]:
+    """productos.flags.cerca_de_zona (San Fernando, Gonzalo 26/11/2026): {flag: {zona, distancia_m, zonas_aviso}}:
+    the listing is evaluated in one of zonas_aviso and its point is within distancia_m of the zone (the aerodrome:
+    heights subject to the approach slopes, Código 3.8.1)."""
+    out, lat, lon = [], r.get("lat_usada") or r.get("lat"), r.get("lon_usada") or r.get("lon")
+    used = {r.get("zona_fot_usado"), r.get("zona_unidades")}
+    for name, k in ((cfg["productos"].get("flags") or {}).get("cerca_de_zona") or {}).items():
+        if lat is None or lon is None or not used & set(k["zonas_aviso"]):
+            continue
+        geom = _zone_shape(cfg["zonificacion"]["zonas_geojson"], k["zona"])
+        if geom is not None and geom.distance(Point(_TO_M(lon, lat))) <= k["distancia_m"]:
+            out.append(name)
+    return out
 
 
 def flags(r: dict, normativa: dict, cfg: dict) -> list[str]:
@@ -83,5 +114,6 @@ def flags(r: dict, normativa: dict, cfg: dict) -> list[str]:
     if "premio_ley_8912_aplicado" in (r.get("alertas") or []):
         out.append("premio_ley_8912_aplicado")
     out += r.get("flags_extra") or []            # set by the evaluation (Tigre: sirga, art. 12 k, art. 71, loteo)
+    out += near_zone(r, cfg)
     arts = {**ARTICLES, **(f.get("articulos") or {})}          # each municipio cites its own code
     return [f"{x} ({arts[x]})" if arts.get(x) else x for x in dict.fromkeys(out)]

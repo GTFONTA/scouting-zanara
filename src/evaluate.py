@@ -107,6 +107,25 @@ def multifamiliar(zone: dict, s: float, p: dict) -> str:
     return "No" if min_area and s < min_area else zone["multifamiliar"]
 
 
+def houses_cap(steps: str, s: float) -> int | None:
+    """Houses one lot takes by its surface (casas_por_lote "400:2;550:3;700:", San Fernando Código 3.5.6.7): the n of
+    the largest area the lot exceeds, None = no cap (the density decides), 1 below the first."""
+    cap = 1
+    for step in steps.split(";"):
+        area, _, n = step.partition(":")
+        if s > float(area):
+            cap = int(n) if n.strip() else None
+    return cap
+
+
+def density_boost(zone: dict, s: float, front: float | None, p: dict) -> float:
+    """Premios raise the density in the same % as the FOT where the code says so (San Fernando, Código 3.20.4:
+    productos.premio_ley_8912.densidad): fot_max / fot when the premios are feasible on this lot, else 1."""
+    if not (p.get("premio_ley_8912") or {}).get("densidad") or not premio_factible(zone, s, front, p):
+        return 1.0
+    return _f(zone["fot_max"]) / _f(zone["fot"]) if _f(zone["fot"]) else 1.0
+
+
 def units(zone: dict, s: float, front: float | None, p: dict) -> dict:
     """Units of each product for one row of normativa_zonas.csv. None = the zone doesn't allow that product.
     Unknown front: surface only (never lose an opportunity; the Excel shows 'sin frente' instead)."""
@@ -115,23 +134,31 @@ def units(zone: dict, s: float, front: float | None, p: dict) -> dict:
     if zone["regla_unidades"] != NO_HOUSING:
         lot_area, lot_width = _f(zone["subdiv_sup_min"]), _f(zone["subdiv_ancho_min"])
         unit_area, unit_width = _f(zone["m2_terreno_por_unidad"]), _f(zone["ancho_min_unidad"])
+        boost = density_boost(zone, s, front, p)
         if lot_area and lot_width:
             out["lotes_frente_propio"] = _floor(s / lot_area) if front is None else \
                 min(_floor(s / lot_area), _floor(front / lot_width))
         if lot_area and s >= p["sup_min_loteo_calle"]:
             out["lotes_calle_interna"] = _floor(s * (1 - p["pct_calle"]) / lot_area)
-        if unit_area and unit_width:
+        steps = zone.get("casas_por_lote") or ""
+        if steps and unit_area:  # San Fernando (Gonzalo, 26/11/2026): houses on the lot by right, by its surface and
+            by_density = _floor(s * boost / unit_area)                      # the density (Código 3.5.6.7, 3.9.1.13)
+            cap = houses_cap(steps, s)
+            out["agrupadas_calle"] = by_density if cap is None else min(cap, by_density)
+        elif unit_area and unit_width:
             out["agrupadas_calle"] = _floor(s / unit_area) if front is None else \
                 min(_floor(s / unit_area), _floor(front / unit_width))
         if unit_area:            # Tigre, Código art. 71: a condominium of houses needs 400 m2 per house with water and
-            common = max(unit_area, p.get("m2_min_agrupadas_acceso_comun") or 0)     # sewers (Gonzalo, 24/11/2026)
+            common = _f(zone.get("m2_unidad_acceso_comun")) or \
+                max(unit_area, p.get("m2_min_agrupadas_acceso_comun") or 0)  # sewers (Gonzalo, 24/11/2026)
             out["agrupadas_acceso_comun"] = _floor(s / common)
         if multifamiliar(zone, s, p) == "Sí":
             potential, net = _f(zone["densidad_neta_potencial"]), _f(zone["densidad_neta"])
             if "N = sup/" in zone["regla_unidades"] and unit_area:          # Rm4: N = sup/150 even multifamiliar
                 out["multifamiliar_unidades"] = _floor(s / unit_area)
             elif potential or net:
-                out["multifamiliar_unidades"] = _floor((potential or net) * s / 10000 / p["personas_por_unidad"])
+                out["multifamiliar_unidades"] = _floor((potential or net) * boost * s / 10000 /
+                                                       p["personas_por_unidad"])
                 out["requiere_cloaca"] = bool(potential)                   # potential density needs sewers
             elif unit_area:
                 out["multifamiliar_unidades"] = _floor(s / unit_area)
@@ -195,8 +222,9 @@ def _caps(zone: dict, fot: float, r: dict, cfg: dict, s: float | None = None,
                effective one (Gonzalo, 24/11/2026): at most 1 - the absorbent share the sector demands (art. 12 g)
                and what the zone's setbacks leave; and N at most what the width of the street allows (art. 12 k:
                productos.art_12k)
-      density  productos.m2_por_habitante (Tigre, Gonzalo 19/11/2026: 30): inhabitants of the zone's density
-               (with sewers if it has a potential one) x m2 per inhabitant
+      density  productos.m2_por_habitante (Tigre, Gonzalo 19/11/2026: 30; San Fernando 26/11/2026): inhabitants
+               of the zone's density (with sewers if it has a potential one; raised by feasible premios where
+               productos.premio_ley_8912.densidad) x m2 per inhabitant
     Without those keys (San Isidro) the FOT doesn't change."""
     limits, forbidden = [], False
     lat, lon = r.get("lat_usada") or r.get("lat"), r.get("lon_usada") or r.get("lon")
@@ -243,7 +271,8 @@ def _caps(zone: dict, fot: float, r: dict, cfg: dict, s: float | None = None,
         if forbidden:
             alerts.append(f"multifamiliar_prohibido_ord_4448 ({cap['fuente']})")
     per_person = cfg["productos"].get("m2_por_habitante")
-    density = _f(zone["densidad_neta_potencial"]) or _f(zone["densidad_neta"])
+    density = (_f(zone["densidad_neta_potencial"]) or _f(zone["densidad_neta"]) or 0) * \
+        density_boost(zone, s or 0, front, cfg["productos"])
     if per_person and density and density * per_person / 10000 < fot:
         fot = density * per_person / 10000
         limits.append(f"densidad {density:g} hab/ha x {per_person:g} m2/hab")
@@ -347,6 +376,8 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
     # zone that yields the most of them
     with_lots = [(x, u) for x, u in evals if any(u[k] is not None for k in LOTS)]
     zl, ul = max(with_lots, key=lambda t: (_lots(t[1]), _lots_approval(t[1]))) if with_lots else (None, None)
+    if zl and density_boost(zl, s, front, p) > 1 and "premio_ley_8912_aplicado" not in r.get("alertas", []):
+        r.setdefault("alertas", []).append("premio_ley_8912_aplicado")      # San Fernando: more houses (3.20.4)
 
     # units of every product (Excel: 'Unidades por derecho' / 'con O.T./UE'): the best of both vías
     for k in ("lotes_frente_propio", "lotes_calle_interna", "agrupadas_calle", "agrupadas_acceso_comun"):
@@ -397,7 +428,7 @@ def _evaluate_products(r: dict, cfg: dict, normativa: dict, medians: dict) -> di
     if out.get("agrupadas_acceso_comun") and p.get("m2_min_agrupadas_acceso_comun"):
         extra.append("agrupadas_art_71")
     if p.get("senales_loteo") and out.get("lotes_calle_interna"):     # Tigre, Gonzalo 24/11/2026 (10.7 #5)
-        extra += ["cesion_ley_8912", "relleno_cota_375"]
+        extra += p["senales_loteo"].get("flags") or ["cesion_ley_8912", "relleno_cota_375"]
         if total > p["senales_loteo"]["cerrado_sup_min"]:
             extra.append("cesion_ley_14449")
     out["gran_predio"] = bool(housing) and total >= p["sup_min_gran_predio"]

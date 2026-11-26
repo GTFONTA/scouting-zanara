@@ -15,6 +15,22 @@ criterio:                          # Gonzalo, 14/11/2026: más bajos que San Isi
 productos:
   normativa_csv: municipios/san_fernando/normativa_zonas.csv
   alias_zonas!: {}
+  # Gonzalo, 26/11/2026: las 8 propuestas de GUIA_NORMATIVA.md (sección 9), sobre el Código Ord. 3603/91
+  m2_por_habitante: 30             # #2: la densidad limita los m² (como Tigre): C2A 3 -> 0,9; C3 1,2 -> 0,6
+  premio_ley_8912:                 # #3: premios del art. 3.20 cuando son factibles (fot_max de la zona)
+    parcelas_min: 2                # lote de al menos 2 parcelas mínimas (y 2 frentes mínimos si se conoce el frente)
+    densidad: true                 # la densidad sube en el mismo % que el FOT (art. 3.20.4)
+  multifamiliar_sup_min:           # #6 y #7
+    C4Ue: 450                      # 3.15.2: multifamiliar con frente >= 15 m y >= 450 m²
+    RR: 3000                       # 3.5.8.8: multifamiliar solo en lotes de 3.000 m² o más
+    "RR: RUM-CR-VOAD-ZEU-ZUM-CRP-EPS": 3000    # Ord. 5951/95, sector RUM
+  senales_loteo:                   # #8: loteo con calle interna
+    flags: [cesion_ley_8912, infraestructura_para_aprobar_loteo]
+    cerrado_sup_min: 5000          # Ley 14.449 art. 51 (provincial)
+  sirga:                           # #8: camino de sirga, 15 m desde la ribera (art. 1974 CCyC), como Tigre
+    ancho_m: 15
+    distancia_max_m: 50
+    descuento_max: 0.5
   comparables:
     busquedas_mercadolibre:
       - https://inmuebles.mercadolibre.com.ar/terrenos-lotes/venta/bsas-gba-norte/san-fernando/_TOTAL*AREA_150-400
@@ -25,20 +41,37 @@ productos:
       galpon_no_conforme: "uso no conforme: verificar Código de San Fernando"
       pasivo_ambiental: "verificar antecedentes del predio"
       gran_predio_3000: "predio grande: verificar cesiones Ley 8912"
-      manzana_7400: "posible manzana completa: verificar Ley 8912"
-      ue_10000: "más de 1 ha: verificar urbanización Ley 8912"
+      manzana_7400: "posible manzana completa: anteproyecto de conjunto (Código 3.2.1.1) y cesiones Ley 8912"
+      ue_10000: "más de 1 ha: anteproyecto de conjunto ante el municipio (Código 3.2.1.1) y cesiones Ley 8912 art. 56"
       frentista_via_rapida: ""
       lindero_zona_c_o_i: "lindero a zona comercial o industrial"
       borde_de_zona: "posible predio en dos zonas: verificar plano"
       requiere_cloaca_para_max: "indicadores máximos con agua y cloaca"
-      premio_ley_8912: "FOT/densidad con premios del Art. 47 Ley 8912: ver notas de la zona"
+      premio_ley_8912: "la zona tiene premios (Código 3.20, Ley 8912 art. 47): ver notas de la zona"
+      premio_ley_8912_aplicado: "FOT y densidad con premios del Código 3.20 (ancho de parcela, retiros laterales): verificar"
+      casas_por_lote_3567: "varias viviendas por lote: 2 > 400 m², 3 > 550 m², más > 700 m² según densidad (Código 3.5.6.7); dúplex con patio de 4 m x 24 m²"
+      uso_complementario_estudio_especial: "la vivienda multifamiliar es uso complementario en R3: requiere estudio especial de Planeamiento (Código 3.1.1.3)"
+      requiere_cloaca_casas: "250 hab/ha con agua y cloaca; con agua sin cloaca 150 hab/ha; sin agua ni cloaca una sola vivienda (Código 3.5.6.7 f)"
+      agrupadas_bpn_3913: "viviendas agrupadas: FOS 0,35, FOT 0,70, PB+2; tiras a 9 m, 7,50 m del lindero, 25% del frente libre; 1,5 cocheras y 1 amarra por vivienda (Código 3.9.1.13 a 3.9.1.31)"
+      saneamiento_obligatorio_bpn: "zona de saneamiento obligatorio: relleno y desagües a cargo del propietario (Ley 8912 art. 84); factibilidad hidráulica para conjuntos; locales sobre cota +4,00 IGM"
+      c4ue_multifamiliar_3152: "multifamiliar solo con frente >= 15 m y >= 450 m², PB libre para cocheras, 9 m y deptos de 3 ambientes >= 70 m² (Código 3.15.2 y 3.15.6)"
+      rr_multifamiliar_3000: "multifamiliar solo en lotes >= 3.000 m² (FOS 0,2, FOT 1,4); en lotes menores una vivienda por lote (Código 3.5.8)"
+      verificar_subzona_reconquista: "Parque de la Reconquista (Ord. 5951/95): evaluado con el sector RUM; verificar la subzona en el plano (CR, VOAD, ZEU y ZUM tienen otros indicadores)"
+      cesion_ley_8912: "loteo: cesiones de verde y equipamiento (Ley 8912 art. 56); parcelas con relación ancho/fondo >= 1/3 (Código 3.2.1.4)"
+      infraestructura_para_aprobar_loteo: "el plano de loteo se aprueba con pavimento de hormigón, agua, electricidad y desagües hechos (Código 3.2.1.3)"
+      cesion_ley_14449: "urbanización cerrada de más de 5.000 m²: cede el 10% de la superficie o su equivalente (Ley 14.449 art. 51)"
+      camino_de_sirga: "franja de 15 m desde la ribera, de uso público y sin construcciones (art. 1974 CCyC): descontada de la superficie útil"
+      cerca_aerodromo: "a menos de 3 km del Aeródromo San Fernando: altura sujeta a las superficies de aproximación, autorización aeronáutica (Código 3.8.1)"
       ver_observacion_zona: "la zona tiene observaciones en UrbaSIG: ver normativa_zonas.csv"
       dos_frentes: "esquina o doble frente: más frente a la calle que el informado"
+    cerca_de_zona:                 # #8: torres y edificios altos cerca del aeródromo (UE 2)
+      cerca_aerodromo: {zona: "UE 2", distancia_m: 3000, zonas_aviso: [C1, R1, R1U0, DRC, "RR: RUM-CR-VOAD-ZEU-ZUM-CRP-EPS"]}
 
 zonificacion:
   zonas_geojson: municipios/san_fernando/zonas.geojson
   barrios_geojson: municipios/san_fernando/localidades.geojson
   calles_geojson: municipios/san_fernando/calles.geojson
+  rios_geojson: municipios/san_fernando/fuentes/rios_osm.geojson   # OSM (tools/municipio_pba.py --solo-rios)
   fot_max: 3.0                     # C1, C2, C2A
   superficie_min_prefiltro: 433.3
 

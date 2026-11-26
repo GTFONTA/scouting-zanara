@@ -11,6 +11,7 @@ Usage:
     python tools/municipio_pba.py san_fernando
     python tools/municipio_pba.py tigre --solo-normativa    # only normativa_zonas.csv, from the saved raw layer
     python tools/municipio_pba.py tigre --solo-calles       # only calles.geojson (one Overpass query)
+    python tools/municipio_pba.py san_fernando --solo-rios  # only fuentes/rios_osm.geojson (camino de sirga)
 Output (municipios/<slug>/):
     fuentes/urbasig_zonificacion.geojson   raw layer, as downloaded
     zonas.geojson                          one feature per zone polygon: {zona}
@@ -18,6 +19,7 @@ Output (municipios/<slug>/):
     localidades.geojson                    {barrio}: OSM localidades, clipped to the zoned (continental) area
     calles.geojson                         {nombre, tipo, ancho}: named OSM streets of the partido (tipo = OSM
                                            highway class, ancho = OSM width tag when mapped: Ord. 4448 art. 12 k)
+    fuentes/rios_osm.geojson               {nombre, tipo}: OSM rivers, canals and streams (--solo-rios; San Fernando)
 
 How a UrbaSIG zone becomes a normativa row (ZANARA's products, values of each partido; decisions to validate
 with Gonzalo, listed in the municipio's NORMATIVA.md):
@@ -54,7 +56,11 @@ COLUMNS = ["zona", "grupo", "relevancia", "fot", "fot_max", "fos", "altura_max",
            #   fondo_min: the sheet lets the building take the rear setback down to this to complete the FOS;
            #   lateral: max(min, % of the width) on one side (none on lots up to 11 m), or `bilateral` m each side
            "retiro_frente", "retiro_fondo_base", "retiro_fondo_min", "retiro_lateral_pct", "retiro_lateral_min",
-           "retiro_bilateral"]
+           "retiro_bilateral",
+           # houses on one lot by right (San Fernando, Gonzalo 26/11/2026): "area:n;..." = lots of more than `area` m2
+           # take up to n houses (empty n: as many as the density gives, one every m2_terreno_por_unidad); smaller
+           # lots one. m2_unidad_acceso_comun: land per house of the condominium with approval (empty: as by right)
+           "casas_por_lote", "m2_unidad_acceso_comun"]
 ANCHO_CASA_AGRUPADA = 5
 
 PARTIDOS = {
@@ -154,7 +160,68 @@ PARTIDOS = {
         "codigo": "096", "osm": 2443418,
         # Gonzalo, 14/11/2026 (checked in the code): C3/C3A admit multifamiliar, R3/R3A/R3B/R4 don't
         "multi": [("C3", "Sí"), ("R3", "No"), ("R4", "No"), ("DUE", "Condicional"), ("BPN", "No"), ("RRE", "No")],
-        "sin_vivienda": ["I1", "IE", "UE", "ESECS", "EVUP", "RC2", "Z C", "ACCESO", "AREA DE ISLAS", "R4Ue"],
+        # Gonzalo, 26/11/2026 (GUIA_NORMATIVA.md 9, #5 and #6): I2, I2A and DI admit a house only as an annex of the
+        # industry (Código 3.5.10.1 and 3.5.10.7); DDP is a finished conjunto that can't be changed (3.14.3)
+        "sin_vivienda": ["I1", "IE", "UE", "ESECS", "EVUP", "RC2", "Z C", "ACCESO", "AREA DE ISLAS", "R4Ue",
+                         "I2", "DI", "DDP"],
+        # Gonzalo, 26/11/2026: the Código de Edificación y Zonificación (Ord. 3603/91, texto ordenado; GUIA_NORMATIVA.md)
+        # over UrbaSIG. Designation prefix -> columns (first match wins; "_vivienda": housing although UrbaSIG has no FOT)
+        "fuente_planillas": "Código Ord. 3603/91 (26/11/2026)",
+        "planillas": [
+            # #1: several houses per lot (3.5.6.7): 2 above 400 m2 (the U00 subzone; U0/U1/U2 allow it from 330/250,
+            # below the prefilter), 3 above 550, more above 700 by the density (4 people per house): R3A 170 hab/ha
+            # = 1 every 235 m2, R3 250 = 160 m2. With approval (PH ordinances in R3: Los Sauces 6003/95, Los Plátanos
+            # 6315/96) 320 hab/ha = 125 m2. #3: FOT 1 -> 1,2 with premios (3.5.6.3), density in the same %
+            ("R3A", {"relevancia": "Alta", "regla_unidades": "Varias viviendas por lote (Código 3.5.6.7)",
+                     "m2_terreno_por_unidad": 235, "casas_por_lote": "400:2;550:3;700:", "m2_unidad_acceso_comun": 125,
+                     "fot_max": 1.2,
+                     "flags+": "casas_por_lote_3567;uso_complementario_estudio_especial;requiere_cloaca_casas;premio_ley_8912",
+                     "notas": "Hasta 2 viviendas > 400 m2, 3 > 550 m2, más > 700 m2 según FOS/FOT/densidad (3.5.6.7); "
+                              "densidad 170 hab/ha; FOT 1 hasta 1,2 con premios (3.5.6.3, 3.20)"}),
+            ("R3", {"relevancia": "Alta", "regla_unidades": "Varias viviendas por lote (Código 3.5.6.7)",
+                    "m2_terreno_por_unidad": 160, "casas_por_lote": "400:2;550:3;700:", "m2_unidad_acceso_comun": 125,
+                    "fot_max": 1.2,
+                    "flags+": "casas_por_lote_3567;uso_complementario_estudio_especial;requiere_cloaca_casas;premio_ley_8912",
+                    "notas": "Hasta 2 viviendas > 400 m2, 3 > 550 m2, más > 700 m2 según FOS/FOT/densidad (3.5.6.7); "
+                             "densidad 250 hab/ha con cloaca, 150 con agua sin cloaca; FOT 1 hasta 1,2 con premios"}),
+            # #4: BPN, individual or grouped houses (3.9.1.2, 3.9.1.13): FOS 0,35, FOT 0,70, 160 hab/ha = 1 every 250 m2
+            ("BPN", {"relevancia": "Alta", "regla_unidades": "Viviendas agrupadas (Código 3.9.1.13)",
+                     "m2_terreno_por_unidad": 250, "casas_por_lote": "0:", "fot": 0.7, "fos": 0.35,
+                     "flags+": "agrupadas_bpn_3913;saneamiento_obligatorio_bpn",
+                     "notas": "Viviendas individuales o agrupadas: FOS 0,35, FOT 0,70 (sin espejos de agua ni "
+                              "circulaciones), 160 hab/ha con infraestructura, PB+2 y 10,50 m; 1,5 cocheras y 1 amarra "
+                              "por vivienda; saneamiento obligatorio (art. 84 Ley 8912)"}),
+            # #6: C4Ue, multifamiliar with free ground floor and 9 m: two floors x FOS 0,6 = 1,2 (3.15.6, 3.15.7); from
+            # 15 m and 450 m2 (productos.multifamiliar_sup_min; the front goes as a flag)
+            ("C4Ue", {"fot": 1.2, "flags+": "c4ue_multifamiliar_3152",
+                      "notas": "FOT 2 para multifamiliar, pero con PB libre para estacionamiento y 9 m: 2 pisos x FOS "
+                               "0,6 = 1,2 (3.15.6 y 3.15.7); multi solo con frente >= 15 m y >= 450 m2; deptos de 3 "
+                               "ambientes >= 70 m2"}),
+            # #7: Parque de la Reconquista (Ord. 5951/95): the residential sector RUM (houses on 18 x 500; multifamiliar
+            # FOT 0,8, 600 hab/ha, from 3.000 m2); the layer can't tell the subzones apart (flag)
+            ("RR: RUM", {"_vivienda": True, "relevancia": "Media", "fot": 0.8, "fos": 0.3, "multifamiliar": "Sí",
+                         "regla_unidades": "Densidad neta de la zona (multifamiliar)", "densidad_neta": 600,
+                         "subdiv_ancho_min": 18, "subdiv_sup_min": 500, "flags+": "verificar_subzona_reconquista",
+                         "notas": "Indicadores del sector RUM de la Ord. 5951/95 (uni 18 x 500 m2, FOS 0,4, FOT 0,6; "
+                                  "multi desde 3.000 m2, FOS 0,3, FOT 0,8, 600 hab/ha, PB+4); el resto de las "
+                                  "subzonas (CR, VOAD, ZEU, ZUM, CRP) tiene otros indicadores"}),
+            ("RRE", {}),
+            # #6: RR (3.5.8): multifamiliar only on lots from 3.000 m2 (FOS 0,2, FOT 1,4, 400 hab/ha, 30 m); smaller
+            # lots one house (FOT 0,6)
+            ("RR", {"fot": 1.4, "fos": 0.2, "densidad_neta": 400, "multifamiliar": "Sí",
+                    "regla_unidades": "Densidad neta de la zona (multifamiliar)", "flags+": "rr_multifamiliar_3000",
+                    "notas": "Multifamiliar solo en lotes >= 3.000 m2: FOS 0,2, FOT 1,4, 400 hab/ha, h 30 m (3.5.8.8 "
+                             "a 3.5.8.13); unifamiliar una por lote, FOS 0,4, FOT 0,6, 200 hab/ha"}),
+            # #3: premios of 3.20 where the height leaves room: R2 x1,25 (lot width) inside PB+3 with FOS 0,6 (2,4);
+            # towers of R1 (31,80 m) and C1 (38,40 m): width + 4 m side setbacks
+            ("R2", {"fot_max": 2.25, "flags+": "premio_ley_8912",
+                    "notas": "FOT 1,8 'que se incrementará' con premios (3.5.5.3, 3.20): x1,25 por ancho de parcela "
+                             "entra en 11,20 m (PB+3)"}),
+            ("R1", {"fot_max": 3.1, "flags+": "premio_ley_8912",
+                    "notas": "Torre 2,4 + premios (3.5.4.3, 3.20): ancho y retiros laterales de 4 m, h 31,80 m"}),
+            ("C1", {"fot_max": 3.9, "flags+": "premio_ley_8912",
+                    "notas": "Torre 3 + premios (3.5.1.3, 3.20): ancho y retiros laterales de 4 m, h 38,40 m"}),
+        ],
     },
 }
 
@@ -204,7 +271,8 @@ def zone_row(name: str, props: list[dict], conf: dict) -> dict:
     um2, sm, lm = _f(p["um2"]), _f(p["sm"]), _f(p["lm"])
     prem = max(_f(p.get("fotp_prem")), 0)
     obs = " ".join((p.get("observacio") or "").split())
-    housing = fot > 0 and not _starts(name, conf["sin_vivienda"])
+    fix = next((cols for pre, cols in conf.get("planillas", []) if name.startswith(pre)), None)
+    housing = (fot > 0 or bool((fix or {}).get("_vivienda"))) and not _starts(name, conf["sin_vivienda"])
     multi = next((m for pre, m in conf["multi"] if name.startswith(pre)), None)
     if multi is None:
         multi = "Sí" if dens >= 300 else "Condicional" if dens >= 150 else "No"
@@ -242,16 +310,18 @@ def zone_row(name: str, props: list[dict], conf: dict) -> dict:
         "notas": " | ".join(x for x in (obs, f"premios Art. 47: FOT {prem:g}, densidad {_f(p.get('denp_prem')):g}"
                                         if prem > fot else "", p.get("des_cat") or "") if x),
     }
-    fix = next((cols for pre, cols in conf.get("planillas", []) if name.startswith(pre)), None) if housing else None
+    fix = fix if housing else None
     if fix:
         for col, value in fix.items():
+            if col == "_vivienda":
+                continue
             if col == "flags+":
                 row["flags"] = ";".join(dict.fromkeys(x for x in row["flags"].split(";") + [value] if x))
             else:
                 row[col] = _num(value) if isinstance(value, (int, float)) else value
         if row["multifamiliar"] == "Sí":
             row["relevancia"] = "Alta"
-        row["fuente"] += " + planilla tigre.gob.ar (19/11/2026)"
+        row["fuente"] += " + " + conf.get("fuente_planillas", "planilla tigre.gob.ar (19/11/2026)")
     setbacks = next((cols for pre, cols in conf.get("retiros", []) if name.startswith(pre)), None) if housing else None
     for col, value in (setbacks or {}).items():
         row[col] = _num(value) if value else "0"
@@ -283,12 +353,35 @@ out geom;""")
     return len(feats)
 
 
-def main(slug: str, only_normativa: bool = False, only_streets: bool = False) -> None:
+def rivers(slug: str, out: Path) -> int:
+    """OSM rivers, canals and streams around the continental partido (its localidades plus ~1 km: the whole partido
+    takes in the Delta and the query fails), for the camino de sirga (src/entorno.py). Only named rivers and named
+    canals ("Canal ..."): the sirga is for waterways used for navigation (art. 1974 CCyC), not for the unnamed
+    drainage ditches or the canalized arroyos (Pavón) that cross Virreyes and Victoria."""
+    locs = json.loads((out / "localidades.geojson").read_text(encoding="utf-8"))
+    w, s, e, n = unary_union([shape(f["geometry"]) for f in locs["features"]]).buffer(0.01).bounds
+    ways = overpass(f"""[out:json][timeout:240];
+way["waterway"~"^(river|canal|stream)$"]({s},{w},{n},{e});
+out geom;""")
+    feats = [{"type": "Feature",
+              "geometry": {"type": "LineString", "coordinates": [[p["lon"], p["lat"]] for p in w["geometry"]]},
+              "properties": {"nombre": w["tags"].get("name", ""), "tipo": w["tags"]["waterway"]}}
+             for w in ways if w.get("geometry") and len(w["geometry"]) > 1 and w["tags"].get("name")
+             and (w["tags"]["waterway"] == "river" or w["tags"]["name"].startswith("Canal"))]
+    (out / "fuentes" / "rios_osm.geojson").write_text(
+        json.dumps({"type": "FeatureCollection", "features": feats}, ensure_ascii=False), encoding="utf-8")
+    return len(feats)
+
+
+def main(slug: str, only_normativa: bool = False, only_streets: bool = False, only_rivers: bool = False) -> None:
     conf = PARTIDOS[slug]
     out = ROOT / "municipios" / slug
     (out / "fuentes").mkdir(parents=True, exist_ok=True)
     if only_streets:
         print(f"{slug}: {streets(slug, out)} tramos de calle -> {out / 'calles.geojson'}")
+        return
+    if only_rivers:
+        print(f"{slug}: {rivers(slug, out)} tramos de río, canal o arroyo -> {out / 'fuentes' / 'rios_osm.geojson'}")
         return
     raw_path = out / "fuentes" / "urbasig_zonificacion.geojson"
     if only_normativa:
@@ -337,4 +430,4 @@ out geom;""")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], "--solo-normativa" in sys.argv[2:], "--solo-calles" in sys.argv[2:])
+    main(sys.argv[1], "--solo-normativa" in sys.argv[2:], "--solo-calles" in sys.argv[2:], "--solo-rios" in sys.argv[2:])

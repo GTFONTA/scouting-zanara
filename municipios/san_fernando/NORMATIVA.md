@@ -4,6 +4,8 @@
 
 **Tipo B** (capa vectorial con indicadores), y de las tres es la más actualizada.
 
+**26/11/2026:** el texto completo del Código, comparado con lo que usa el motor, está en `GUIA_NORMATIVA.md`. Gonzalo aprobó las 8 propuestas y quedaron aplicadas (sección 9.1), así que lo de abajo sobre R3/R4 y casas agrupadas quedó superado.
+
 ## Cómo se arma cada zona (decidido el 14/11/2026, sin Gonzalo)
 
 - **FOT y densidad:** los de UrbaSIG (en San Fernando casi no hay valores potenciales).
